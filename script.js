@@ -312,6 +312,279 @@ class SchoolManagementSystem {
         alert('Admission application submitted successfully!');
     }
 
+    showAdmissionTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.admission-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show selected tab content
+        document.getElementById(tabName + 'AdmissionForm').classList.add('active');
+        document.querySelector(`[onclick="showAdmissionTab('${tabName}')"]`).classList.add('active');
+
+        // Load tab-specific data
+        this.loadAdmissionTabData(tabName);
+    }
+
+    loadAdmissionTabData(tabName) {
+        switch(tabName) {
+            case 'pending':
+                this.loadPendingAdmissions();
+                break;
+            case 'processed':
+                this.loadProcessedAdmissions();
+                break;
+        }
+    }
+
+    loadPendingAdmissions() {
+        const pendingAdmissions = this.admissions.filter(a => a.status === 'pending');
+        const pendingList = document.getElementById('pendingAdmissionsList');
+        
+        if (pendingAdmissions.length === 0) {
+            pendingList.innerHTML = '<p>No pending admissions to review.</p>';
+            return;
+        }
+
+        pendingList.innerHTML = pendingAdmissions.map(admission => `
+            <div class="admission-card">
+                <div class="admission-header">
+                    <div class="admission-info">
+                        <h4>${admission.studentName}</h4>
+                        <div class="admission-meta">
+                            <span><i class="fas fa-calendar"></i> ${this.formatDate(admission.applicationDate)}</span>
+                            <span><i class="fas fa-graduation-cap"></i> Class ${admission.class}</span>
+                        </div>
+                    </div>
+                    <div class="admission-status status-pending">Pending</div>
+                </div>
+                <div class="admission-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Parent/Guardian</div>
+                        <div class="detail-value">${admission.parentName}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Contact</div>
+                        <div class="detail-value">${admission.contactNumber}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Email</div>
+                        <div class="detail-value">${admission.email || 'Not provided'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Date of Birth</div>
+                        <div class="detail-value">${this.formatDate(admission.dateOfBirth)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Address</div>
+                        <div class="detail-value">${admission.address}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Previous School</div>
+                        <div class="detail-value">${admission.previousSchool || 'Not specified'}</div>
+                    </div>
+                </div>
+                <div class="admission-actions">
+                    <button class="btn btn-success btn-sm" onclick="schoolSystem.acceptAdmission(${admission.id})">
+                        <i class="fas fa-check"></i> Accept
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="schoolSystem.rejectAdmission(${admission.id})">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Update admission statistics
+        this.updateAdmissionStats();
+    }
+
+    loadProcessedAdmissions() {
+        const processedAdmissions = this.admissions.filter(a => a.status !== 'pending');
+        const processedList = document.getElementById('processedAdmissionsList');
+        
+        if (processedAdmissions.length === 0) {
+            processedList.innerHTML = '<p>No processed admissions found.</p>';
+            return;
+        }
+
+        processedList.innerHTML = processedAdmissions.map(admission => `
+            <div class="admission-card ${admission.status}">
+                <div class="admission-header">
+                    <div class="admission-info">
+                        <h4>${admission.studentName}</h4>
+                        <div class="admission-meta">
+                            <span><i class="fas fa-calendar"></i> ${this.formatDate(admission.applicationDate)}</span>
+                            <span><i class="fas fa-graduation-cap"></i> Class ${admission.class}</span>
+                        </div>
+                    </div>
+                    <div class="admission-status status-${admission.status}">${admission.status}</div>
+                </div>
+                <div class="admission-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Parent/Guardian</div>
+                        <div class="detail-value">${admission.parentName}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Contact</div>
+                        <div class="detail-value">${admission.contactNumber}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status Date</div>
+                        <div class="detail-value">${this.formatDate(admission.processedDate)}</div>
+                    </div>
+                    ${admission.status === 'accepted' ? `
+                        <div class="detail-item">
+                            <div class="detail-label">Roll Number</div>
+                            <div class="detail-value">${admission.rollNumber || 'Not assigned'}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+
+        // Update admission statistics
+        this.updateAdmissionStats();
+    }
+
+    acceptAdmission(admissionId) {
+        const admission = this.admissions.find(a => a.id == admissionId);
+        if (!admission) return;
+
+        // Generate roll number
+        const rollNumber = this.generateRollNumber(admission.class);
+        
+        // Create student record from admission
+        const studentData = {
+            id: Date.now(),
+            name: admission.studentName,
+            class: admission.class,
+            rollNo: rollNumber,
+            dateOfBirth: admission.dateOfBirth,
+            parentName: admission.parentName,
+            contact: admission.contactNumber,
+            email: admission.email,
+            address: admission.address,
+            admissionDate: new Date().toISOString(),
+            admissionId: admission.id
+        };
+
+        // Add to students
+        this.students.push(studentData);
+        localStorage.setItem('students', JSON.stringify(this.students));
+
+        // Update admission status
+        admission.status = 'accepted';
+        admission.processedDate = new Date().toISOString();
+        admission.rollNumber = rollNumber;
+        localStorage.setItem('admissions', JSON.stringify(this.admissions));
+
+        this.addActivity(`Accepted admission: ${admission.studentName} - Roll No: ${rollNumber}`);
+        this.loadPendingAdmissions();
+        this.loadDashboardData();
+        
+        alert(`Admission accepted! Student ${admission.studentName} has been enrolled with Roll Number ${rollNumber}`);
+    }
+
+    rejectAdmission(admissionId) {
+        const admission = this.admissions.find(a => a.id == admissionId);
+        if (!admission) return;
+
+        if (confirm(`Are you sure you want to reject the admission application for ${admission.studentName}?`)) {
+            admission.status = 'rejected';
+            admission.processedDate = new Date().toISOString();
+            localStorage.setItem('admissions', JSON.stringify(this.admissions));
+
+            this.addActivity(`Rejected admission: ${admission.studentName}`);
+            this.loadPendingAdmissions();
+            this.loadDashboardData();
+            
+            alert(`Admission application for ${admission.studentName} has been rejected.`);
+        }
+    }
+
+    generateRollNumber(studentClass) {
+        // Get existing students in the same class
+        const classStudents = this.students.filter(s => s.class === studentClass);
+        const nextNumber = classStudents.length + 1;
+        return `${studentClass}${nextNumber.toString().padStart(3, '0')}`;
+    }
+
+    filterProcessedAdmissions() {
+        const filterValue = document.getElementById('processedFilter').value;
+        const searchTerm = document.getElementById('processedSearch').value.toLowerCase();
+        
+        let filteredAdmissions = this.admissions.filter(a => a.status !== 'pending');
+
+        if (filterValue) {
+            filteredAdmissions = filteredAdmissions.filter(a => a.status === filterValue);
+        }
+
+        if (searchTerm) {
+            filteredAdmissions = filteredAdmissions.filter(a => 
+                a.studentName.toLowerCase().includes(searchTerm) ||
+                a.parentName.toLowerCase().includes(searchTerm) ||
+                a.contactNumber.includes(searchTerm)
+            );
+        }
+
+        const processedList = document.getElementById('processedAdmissionsList');
+        if (filteredAdmissions.length === 0) {
+            processedList.innerHTML = '<p>No processed admissions match your criteria.</p>';
+            return;
+        }
+
+        processedList.innerHTML = filteredAdmissions.map(admission => `
+            <div class="admission-card ${admission.status}">
+                <div class="admission-header">
+                    <div class="admission-info">
+                        <h4>${admission.studentName}</h4>
+                        <div class="admission-meta">
+                            <span><i class="fas fa-calendar"></i> ${this.formatDate(admission.applicationDate)}</span>
+                            <span><i class="fas fa-graduation-cap"></i> Class ${admission.class}</span>
+                        </div>
+                    </div>
+                    <div class="admission-status status-${admission.status}">${admission.status}</div>
+                </div>
+                <div class="admission-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Parent/Guardian</div>
+                        <div class="detail-value">${admission.parentName}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Contact</div>
+                        <div class="detail-value">${admission.contactNumber}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status Date</div>
+                        <div class="detail-value">${this.formatDate(admission.processedDate)}</div>
+                    </div>
+                    ${admission.status === 'accepted' ? `
+                        <div class="detail-item">
+                            <div class="detail-label">Roll Number</div>
+                            <div class="detail-value">${admission.rollNumber || 'Not assigned'}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    updateAdmissionStats() {
+        const pendingCount = this.admissions.filter(a => a.status === 'pending').length;
+        const acceptedCount = this.admissions.filter(a => a.status === 'accepted').length;
+        const rejectedCount = this.admissions.filter(a => a.status === 'rejected').length;
+
+        document.getElementById('pendingCount').textContent = pendingCount;
+        document.getElementById('acceptedCount').textContent = acceptedCount;
+        document.getElementById('rejectedCount').textContent = rejectedCount;
+    }
+
     // Attendance Management
     loadAttendance() {
         const attendanceClass = document.getElementById('attendanceClass');
@@ -958,6 +1231,15 @@ function clearAllData() {
 
 function generateSystemReport() {
     schoolSystem.generateSystemReport();
+}
+
+// Admission management global functions
+function showAdmissionTab(tabName) {
+    schoolSystem.showAdmissionTab(tabName);
+}
+
+function filterProcessedAdmissions() {
+    schoolSystem.filterProcessedAdmissions();
 }
 
 // Initialize the system when page loads

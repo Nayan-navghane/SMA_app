@@ -157,9 +157,23 @@
             <!-- Admissions Section -->
             <section id="admissions" class="section">
                 <div class="section-header">
-                    <h2><i class="fas fa-user-plus"></i> New Admissions</h2>
+                    <h2><i class="fas fa-user-plus"></i> Admission Management</h2>
+                    <div class="admission-tabs">
+                        <button type="button" class="tab-btn active" onclick="showAdmissionTab('new')">
+                            <i class="fas fa-plus"></i> New Application
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showAdmissionTab('pending')">
+                            <i class="fas fa-clock"></i> Pending Review
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showAdmissionTab('processed')">
+                            <i class="fas fa-check-circle"></i> Processed
+                        </button>
+                    </div>
                 </div>
-                <form id="admissionForm" class="form-container">
+                
+                <!-- New Admission Form -->
+                <div id="newAdmissionForm" class="admission-tab-content active">
+                    <form id="admissionForm" class="form-container">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="studentName">Student Name *</label>
@@ -226,6 +240,43 @@
                         </button>
                     </div>
                 </form>
+                </div>
+
+                <!-- Pending Admissions -->
+                <div id="pendingAdmissions" class="admission-tab-content">
+                    <div class="admission-stats">
+                        <div class="stat-badge">
+                            <span class="stat-number" id="pendingCount">0</span>
+                            <span class="stat-label">Pending</span>
+                        </div>
+                        <div class="stat-badge">
+                            <span class="stat-number" id="acceptedCount">0</span>
+                            <span class="stat-label">Accepted</span>
+                        </div>
+                        <div class="stat-badge">
+                            <span class="stat-number" id="rejectedCount">0</span>
+                            <span class="stat-label">Rejected</span>
+                        </div>
+                    </div>
+                    <div id="pendingAdmissionsList" class="admissions-list">
+                        <p>No pending admissions to review.</p>
+                    </div>
+                </div>
+
+                <!-- Processed Admissions -->
+                <div id="processedAdmissions" class="admission-tab-content">
+                    <div class="filters">
+                        <select id="processedFilter" onchange="filterProcessedAdmissions()">
+                            <option value="">All Processed</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <input type="text" id="processedSearch" placeholder="Search processed admissions..." onkeyup="filterProcessedAdmissions()">
+                    </div>
+                    <div id="processedAdmissionsList" class="admissions-list">
+                        <p>No processed admissions found.</p>
+                    </div>
+                </div>
             </section>
 
             <!-- Attendance Section -->
