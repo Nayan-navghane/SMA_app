@@ -487,6 +487,7 @@ class SchoolManagementSystem {
         this.addActivity(`Accepted admission: ${admission.studentName} - Roll No: ${rollNumber}`);
         this.loadPendingAdmissions();
         this.loadDashboardData();
+        this.populateClassFilters(); // Refresh class filters with new student
         
         alert(`Admission accepted! Student ${admission.studentName} has been enrolled with Roll Number ${rollNumber}`);
     }
