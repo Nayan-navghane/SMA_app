@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-school"></i>
+                <span>School Management System</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#" class="nav-link active" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="#" class="nav-link" data-section="students">
+                    <i class="fas fa-user-graduate"></i> Students
+                </a>
+                <a href="#" class="nav-link" data-section="teachers">
+                    <i class="fas fa-chalkboard-teacher"></i> Teachers
+                </a>
+                <a href="#" class="nav-link" data-section="admissions">
+                    <i class="fas fa-user-plus"></i> Admissions
+                </a>
+                <a href="#" class="nav-link" data-section="attendance">
+                    <i class="fas fa-calendar-check"></i> Attendance
+                </a>
+                <a href="#" class="nav-link" data-section="schedule">
+                    <i class="fas fa-calendar"></i> Schedule
+                </a>
+                <a href="#" class="nav-link" data-section="exams">
+                    <i class="fas fa-file-alt"></i> Exams
+                </a>
+                <a href="#" class="nav-link" data-section="reports">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+                <a href="#" class="nav-link" data-section="staff">
+                    <i class="fas fa-users"></i> Staff
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+                </div>
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalStudents">0</h3>
+                            <p>Total Students</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalTeachers">0</h3>
+                            <p>Total Teachers</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="pendingAdmissions">0</h3>
+                            <p>Pending Admissions</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="todayAttendance">0</h3>
+                            <p>Today's Attendance</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-content">
+                    <div class="recent-activities">
+                        <h3>Recent Activities</h3>
+                        <div id="recentList" class="activity-list">
+                            <p>No recent activities</p>
+                        </div>
+                    </div>
+                    <div class="quick-actions">
+                        <h3>Quick Actions</h3>
+                        <button class="btn btn-primary" onclick="showSection('admissions')">
+                            <i class="fas fa-user-plus"></i> New Admission
+                        </button>
+                        <button class="btn btn-secondary" onclick="showSection('students')">
+                            <i class="fas fa-user-graduate"></i> Add Student
+                        </button>
+                        <button class="btn btn-success" onclick="showSection('attendance')">
+                            <i class="fas fa-calendar-check"></i> Mark Attendance
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Students Section -->
+            <section id="students" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-graduate"></i> Student Management</h2>
+                    <button class="btn btn-primary" onclick="showAddStudentForm()">
+                        <i class="fas fa-plus"></i> Add Student
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="studentSearch" placeholder="Search students..." onkeyup="filterStudents()">
+                    <select id="classFilter" onchange="filterStudents()">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+                <div id="studentsList" class="data-table">
+                    <p>No students found. Add your first student!</p>
+                </div>
+            </section>
+
+            <!-- Teachers Section -->
+            <section id="teachers" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-chalkboard-teacher"></i> Teacher Management</h2>
+                    <button class="btn btn-primary" onclick="showAddTeacherForm()">
+                        <i class="fas fa-plus"></i> Add Teacher
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="teacherSearch" placeholder="Search teachers..." onkeyup="filterTeachers()">
+                    <select id="subjectFilter" onchange="filterTeachers()">
+                        <option value="">All Subjects</option>
+                    </select>
+                </div>
+                <div id="teachersList" class="data-table">
+                    <p>No teachers found. Add your first teacher!</p>
+                </div>
+            </section>
+
+            <!-- Admissions Section -->
+            <section id="admissions" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-plus"></i> New Admissions</h2>
+                </div>
+                <form id="admissionForm" class="form-container">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="studentName">Student Name *</label>
+                            <input type="text" id="studentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="admissionClass">Class *</label>
+                            <select id="admissionClass" required>
+                                <option value="">Select Class</option>
+                                <option value="Nursery">Nursery</option>
+                                <option value="LKG">LKG</option>
+                                <option value="UKG">UKG</option>
+                                <option value="1">Class 1</option>
+                                <option value="2">Class 2</option>
+                                <option value="3">Class 3</option>
+                                <option value="4">Class 4</option>
+                                <option value="5">Class 5</option>
+                                <option value="6">Class 6</option>
+                                <option value="7">Class 7</option>
+                                <option value="8">Class 8</option>
+                                <option value="9">Class 9</option>
+                                <option value="10">Class 10</option>
+                                <option value="11">Class 11</option>
+                                <option value="12">Class 12</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="parentName">Parent/Guardian Name *</label>
+                            <input type="text" id="parentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactNumber">Contact Number *</label>
+                            <input type="tel" id="contactNumber" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="dateOfBirth">Date of Birth *</label>
+                            <input type="date" id="dateOfBirth" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="address">Address *</label>
+                            <textarea id="address" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="previousSchool">Previous School</label>
+                            <input type="text" id="previousSchool">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Submit Application
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm('admissionForm')">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Attendance Section -->
+            <section id="attendance" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-check"></i> Attendance Management</h2>
+                </div>
+                <div class="attendance-controls">
+                    <select id="attendanceClass" onchange="loadAttendanceSheet()">
+                        <option value="">Select Class</option>
+                    </select>
+                    <input type="date" id="attendanceDate" onchange="loadAttendanceSheet()" value="">
+                </div>
+                <div id="attendanceSheet" class="attendance-container">
+                    <p>Select a class and date to view attendance</p>
+                </div>
+            </section>
+
+            <!-- Schedule Section -->
+            <section id="schedule" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar"></i> Class Schedule</h2>
+                </div>
+                <div class="schedule-controls">
+                    <select id="scheduleClass" onchange="loadSchedule()">
+                        <option value="">Select Class</option>
+                    </select>
+                </div>
+                <div id="scheduleTable" class="schedule-container">
+                    <p>Select a class to view schedule</p>
+                </div>
+            </section>
+
+            <!-- Exams Section -->
+            <section id="exams" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-alt"></i> Exam Management</h2>
+                    <button class="btn btn-primary" onclick="showCreateExamForm()">
+                        <i class="fas fa-plus"></i> Create Exam
+                    </button>
+                </div>
+                <div id="examsList" class="data-table">
+                    <p>No exams created yet</p>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Reports</h2>
+                </div>
+                <div class="report-options">
+                    <button class="btn btn-primary" onclick="generateStudentReport()">
+                        <i class="fas fa-user-graduate"></i> Student Report
+                    </button>
+                    <button class="btn btn-secondary" onclick="generateAttendanceReport()">
+                        <i class="fas fa-calendar-check"></i> Attendance Report
+                    </button>
+                    <button class="btn btn-success" onclick="generatePerformanceReport()">
+                        <i class="fas fa-chart-line"></i> Performance Report
+                    </button>
+                </div>
+                <div id="reportsContainer" class="reports-display">
+                    <p>Select a report type to generate</p>
+                </div>
+            </section>
+
+            <!-- Staff Section -->
+            <section id="staff" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Staff Management</h2>
+                    <button class="btn btn-primary" onclick="showAddStaffForm()">
+                        <i class="fas fa-plus"></i> Add Staff
+                    </button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="staffSearch" placeholder="Search staff..." onkeyup="filterStaff()">
+                    <select id="departmentFilter" onchange="filterStaff()">
+                        <option value="">All Departments</option>
+                        <option value="Teaching">Teaching</option>
+                        <option value="Administration">Administration</option>
+                        <option value="Support">Support</option>
+                        <option value="Management">Management</option>
+                    </select>
+                </div>
+                <div id="staffList" class="data-table">
+                    <p>No staff members found. Add your first staff member!</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('studentModal')">&times;</span>
+            <h3 id="modalTitle">Add Student</h3>
+            <form id="studentForm">
+                <input type="hidden" id="studentId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editStudentName">Student Name *</label>
+                        <input type="text" id="editStudentName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editClass">Class *</label>
+                        <select id="editClass" required>
+                            <option value="">Select Class</option>
+                            <option value="Nursery">Nursery</option>
+                            <option value="LKG">LKG</option>
+                            <option value="UKG">UKG</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editRollNo">Roll Number *</label>
+                        <input type="text" id="editRollNo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDateOfBirth">Date of Birth *</label>
+                        <input type="date" id="editDateOfBirth" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editParentName">Parent/Guardian Name *</label>
+                        <input type="text" id="editParentName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editContact">Contact Number *</label>
+                        <input type="tel" id="editContact" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editEmail">Email</label>
+                        <input type="email" id="editEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="editAddress">Address *</label>
+                        <textarea id="editAddress" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('studentModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
