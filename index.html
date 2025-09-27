@@ -338,12 +338,70 @@
             <section id="exams" class="section">
                 <div class="section-header">
                     <h2><i class="fas fa-file-alt"></i> Exam Management</h2>
-                    <button class="btn btn-primary" onclick="showCreateExamForm()">
-                        <i class="fas fa-plus"></i> Create Exam
-                    </button>
+                    <div class="exam-tabs">
+                        <button type="button" class="tab-btn active" onclick="showExamTab('papers')">
+                            <i class="fas fa-file-word"></i> Question Papers
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showExamTab('exams')">
+                            <i class="fas fa-clipboard-list"></i> Exam Schedule
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showExamTab('results')">
+                            <i class="fas fa-chart-bar"></i> Results
+                        </button>
+                    </div>
                 </div>
-                <div id="examsList" class="data-table">
-                    <p>No exams created yet</p>
+
+                <!-- Question Papers Tab -->
+                <div id="papersTab" class="exam-tab-content active">
+                    <div class="paper-controls">
+                        <button class="btn btn-primary" onclick="showPaperCreator()">
+                            <i class="fas fa-plus"></i> Create New Paper
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadPapers()">
+                            <i class="fas fa-sync"></i> Refresh Papers
+                        </button>
+                        <select id="subjectFilter" onchange="filterPapers()">
+                            <option value="">All Subjects</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="English">English</option>
+                            <option value="Social Studies">Social Studies</option>
+                            <option value="Hindi">Hindi</option>
+                        </select>
+                    </div>
+                    <div id="papersList" class="papers-container">
+                        <p>No question papers created yet. Create your first paper!</p>
+                    </div>
+                </div>
+
+                <!-- Exam Schedule Tab -->
+                <div id="examsTab" class="exam-tab-content">
+                    <div class="exam-controls">
+                        <button class="btn btn-primary" onclick="showCreateExamForm()">
+                            <i class="fas fa-plus"></i> Schedule Exam
+                        </button>
+                    </div>
+                    <div id="examsList" class="data-table">
+                        <p>No exams scheduled yet</p>
+                    </div>
+                </div>
+
+                <!-- Results Tab -->
+                <div id="resultsTab" class="exam-tab-content">
+                    <div class="results-controls">
+                        <select id="resultsClassFilter" onchange="loadResults()">
+                            <option value="">Select Class</option>
+                        </select>
+                        <select id="resultsSubjectFilter" onchange="loadResults()">
+                            <option value="">All Subjects</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="generateReportCards()">
+                            <i class="fas fa-file-pdf"></i> Generate Report Cards
+                        </button>
+                    </div>
+                    <div id="resultsList" class="data-table">
+                        <p>Select class and subject to view results</p>
+                    </div>
                 </div>
             </section>
 
@@ -592,6 +650,145 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Paper Creator Modal -->
+    <div id="paperCreatorModal" class="modal">
+        <div class="modal-content paper-modal">
+            <span class="close" onclick="closeModal('paperCreatorModal')">&times;</span>
+            <h3 id="paperModalTitle">Create Question Paper</h3>
+
+            <!-- Paper Configuration -->
+            <div class="paper-config">
+                <div class="config-row">
+                    <div class="config-group">
+                        <label for="paperTitle">Paper Title *</label>
+                        <input type="text" id="paperTitle" placeholder="e.g., Mathematics Final Exam">
+                    </div>
+                    <div class="config-group">
+                        <label for="paperSubject">Subject *</label>
+                        <select id="paperSubject">
+                            <option value="">Select Subject</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="English">English</option>
+                            <option value="Social Studies">Social Studies</option>
+                            <option value="Hindi">Hindi</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-group">
+                        <label for="paperClass">Class *</label>
+                        <select id="paperClass">
+                            <option value="">Select Class</option>
+                            <option value="Nursery">Nursery</option>
+                            <option value="LKG">LKG</option>
+                            <option value="UKG">UKG</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
+                            <option value="10">Class 10</option>
+                            <option value="11">Class 11</option>
+                            <option value="12">Class 12</option>
+                        </select>
+                    </div>
+                    <div class="config-group">
+                        <label for="paperDuration">Duration (minutes)</label>
+                        <input type="number" id="paperDuration" placeholder="120" min="30" max="300">
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-group">
+                        <label for="paperTotalMarks">Total Marks</label>
+                        <input type="number" id="paperTotalMarks" placeholder="100" min="10" max="500">
+                    </div>
+                    <div class="config-group">
+                        <label for="paperInstructions">Instructions</label>
+                        <textarea id="paperInstructions" rows="3" placeholder="General instructions for students..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rich Text Editor -->
+            <div class="editor-container">
+                <div class="editor-toolbar">
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-btn" onclick="formatText('bold')" title="Bold">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatText('italic')" title="Italic">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatText('underline')" title="Underline">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-btn" onclick="formatText('justifyLeft')" title="Align Left">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatText('justifyCenter')" title="Align Center">
+                            <i class="fas fa-align-center"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="formatText('justifyRight')" title="Align Right">
+                            <i class="fas fa-align-right"></i>
+                        </button>
+                    </div>
+                    <div class="toolbar-group">
+                        <select id="fontSize" onchange="formatText('fontSize', this.value)">
+                            <option value="3">Normal</option>
+                            <option value="5">Large</option>
+                            <option value="7">Extra Large</option>
+                        </select>
+                        <select id="fontFamily" onchange="formatText('fontName', this.value)">
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-btn" onclick="addQuestion()" title="Add Question">
+                            <i class="fas fa-plus"></i> Add Question
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="insertTable()" title="Insert Table">
+                            <i class="fas fa-table"></i>
+                        </button>
+                        <button type="button" class="toolbar-btn" onclick="previewPaper()" title="Preview">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-content">
+                    <div id="paperEditor" contenteditable="true" class="paper-editor" placeholder="Start creating your question paper here..."></div>
+                </div>
+            </div>
+
+            <!-- Paper Actions -->
+            <div class="paper-actions">
+                <button type="button" class="btn btn-secondary" onclick="savePaper()">
+                    <i class="fas fa-save"></i> Save Paper
+                </button>
+                <button type="button" class="btn btn-primary" onclick="generatePDF()">
+                    <i class="fas fa-file-pdf"></i> Generate PDF
+                </button>
+                <button type="button" class="btn btn-success" onclick="printPaper()">
+                    <i class="fas fa-print"></i> Print Paper
+                </button>
+                <button type="button" class="btn btn-warning" onclick="closeModal('paperCreatorModal')">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Modals -->

@@ -11,6 +11,9 @@ class SchoolManagementSystem {
         this.activities = JSON.parse(localStorage.getItem('activities')) || [];
         this.settings = JSON.parse(localStorage.getItem('settings')) || this.getDefaultSettings();
         this.recycleBin = JSON.parse(localStorage.getItem('recycleBin')) || [];
+        this.questionPapers = JSON.parse(localStorage.getItem('questionPapers')) || [];
+        this.examSchedules = JSON.parse(localStorage.getItem('examSchedules')) || [];
+        this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
         
         this.init();
     }
@@ -823,12 +826,408 @@ class SchoolManagementSystem {
 
     // Exam Management
     showCreateExamForm() {
-        alert('Exam creation will be implemented next');
+        alert('Exam scheduling will be implemented next');
     }
 
     loadExams() {
+        this.loadExamTabs('exams');
+    }
+
+    showExamTab(tabName) {
+        // Hide all exam tab contents
+        document.querySelectorAll('.exam-tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+
+        // Remove active class from all exam tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show selected tab content
+        document.getElementById(tabName + 'Tab').classList.add('active');
+        document.querySelector(`[onclick="showExamTab('${tabName}')"]`).classList.add('active');
+
+        // Load tab-specific data
+        this.loadExamTabs(tabName);
+    }
+
+    loadExamTabs(tabName) {
+        switch(tabName) {
+            case 'papers':
+                this.loadPapers();
+                break;
+            case 'exams':
+                this.loadExamSchedules();
+                break;
+            case 'results':
+                this.loadExamResults();
+                break;
+        }
+    }
+
+    showPaperCreator() {
+        document.getElementById('paperModalTitle').textContent = 'Create Question Paper';
+        document.getElementById('paperTitle').value = '';
+        document.getElementById('paperSubject').value = '';
+        document.getElementById('paperClass').value = '';
+        document.getElementById('paperDuration').value = '';
+        document.getElementById('paperTotalMarks').value = '';
+        document.getElementById('paperInstructions').value = '';
+        document.getElementById('paperEditor').innerHTML = '';
+        document.getElementById('paperCreatorModal').style.display = 'block';
+    }
+
+    loadPapers() {
+        const papersList = document.getElementById('papersList');
+        const subjectFilter = document.getElementById('subjectFilter').value;
+
+        let filteredPapers = this.questionPapers;
+
+        if (subjectFilter) {
+            filteredPapers = filteredPapers.filter(p => p.subject === subjectFilter);
+        }
+
+        if (filteredPapers.length === 0) {
+            papersList.innerHTML = '<p>No question papers created yet. Create your first paper!</p>';
+            return;
+        }
+
+        papersList.innerHTML = filteredPapers.map(paper => `
+            <div class="paper-card">
+                <div class="paper-header">
+                    <div class="paper-info">
+                        <h4>${paper.title}</h4>
+                        <div class="paper-meta">
+                            <span><i class="fas fa-book"></i> ${paper.subject}</span>
+                            <span><i class="fas fa-graduation-cap"></i> Class ${paper.class}</span>
+                            <span><i class="fas fa-clock"></i> ${paper.duration} min</span>
+                            <span><i class="fas fa-star"></i> ${paper.totalMarks} marks</span>
+                        </div>
+                    </div>
+                    <div class="paper-date">
+                        Created: ${this.formatDate(paper.createdDate)}
+                    </div>
+                </div>
+                <div class="paper-preview">
+                    ${paper.content.length > 200 ? paper.content.substring(0, 200) + '...' : paper.content}
+                </div>
+                <div class="paper-actions">
+                    <button class="btn btn-primary btn-sm" onclick="schoolSystem.editPaper(${paper.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="schoolSystem.generatePDFFromPaper(${paper.id})">
+                        <i class="fas fa-file-pdf"></i> Generate PDF
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="schoolSystem.printPaper(${paper.id})">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="schoolSystem.deletePaper(${paper.id})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    savePaper() {
+        const title = document.getElementById('paperTitle').value;
+        const subject = document.getElementById('paperSubject').value;
+        const classValue = document.getElementById('paperClass').value;
+        const duration = document.getElementById('paperDuration').value;
+        const totalMarks = document.getElementById('paperTotalMarks').value;
+        const instructions = document.getElementById('paperInstructions').value;
+        const content = document.getElementById('paperEditor').innerHTML;
+
+        if (!title || !subject || !classValue) {
+            alert('Please fill in all required fields (Title, Subject, Class)');
+            return;
+        }
+
+        const paperData = {
+            id: Date.now(),
+            title,
+            subject,
+            class: classValue,
+            duration: duration || '120',
+            totalMarks: totalMarks || '100',
+            instructions,
+            content,
+            createdDate: new Date().toISOString(),
+            lastModified: new Date().toISOString()
+        };
+
+        this.questionPapers.push(paperData);
+        localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
+
+        this.addActivity(`Created question paper: ${title}`);
+        document.getElementById('paperCreatorModal').style.display = 'none';
+        this.loadPapers();
+
+        alert('Question paper saved successfully!');
+    }
+
+    editPaper(paperId) {
+        const paper = this.questionPapers.find(p => p.id == paperId);
+        if (!paper) return;
+
+        document.getElementById('paperModalTitle').textContent = 'Edit Question Paper';
+        document.getElementById('paperTitle').value = paper.title;
+        document.getElementById('paperSubject').value = paper.subject;
+        document.getElementById('paperClass').value = paper.class;
+        document.getElementById('paperDuration').value = paper.duration;
+        document.getElementById('paperTotalMarks').value = paper.totalMarks;
+        document.getElementById('paperInstructions').value = paper.instructions;
+        document.getElementById('paperEditor').innerHTML = paper.content;
+
+        // Store current paper ID for update
+        document.getElementById('paperEditor').setAttribute('data-paper-id', paperId);
+        document.getElementById('paperCreatorModal').style.display = 'block';
+    }
+
+    deletePaper(paperId) {
+        if (confirm('Are you sure you want to delete this question paper?')) {
+            const paper = this.questionPapers.find(p => p.id == paperId);
+            this.questionPapers = this.questionPapers.filter(p => p.id != paperId);
+            localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
+
+            this.addActivity(`Deleted question paper: ${paper.title}`);
+            this.loadPapers();
+
+            alert('Question paper deleted successfully!');
+        }
+    }
+
+    generatePDFFromPaper(paperId) {
+        const paper = this.questionPapers.find(p => p.id == paperId);
+        if (!paper) return;
+
+        this.generatePDFFromPaperData(paper);
+    }
+
+    generatePDFFromPaperData(paper) {
+        // Create PDF content
+        const pdfContent = `
+            <html>
+            <head>
+                <title>${paper.title}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    .paper-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+                    .paper-meta { font-size: 14px; color: #666; margin-bottom: 20px; }
+                    .instructions { background: #f9f9f9; padding: 15px; border-left: 4px solid #667eea; margin-bottom: 30px; }
+                    .content { line-height: 1.6; }
+                    .question { margin-bottom: 20px; }
+                    .question-number { font-weight: bold; color: #667eea; }
+                    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    @media print { body { margin: 20px; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="paper-title">${paper.title}</div>
+                    <div class="paper-meta">
+                        Subject: ${paper.subject} | Class: ${paper.class} | Duration: ${paper.duration} minutes | Total Marks: ${paper.totalMarks}
+                    </div>
+                </div>
+                ${paper.instructions ? `<div class="instructions"><strong>Instructions:</strong><br>${paper.instructions}</div>` : ''}
+                <div class="content">${paper.content}</div>
+            </body>
+            </html>
+        `;
+
+        // Open in new window for PDF generation
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(pdfContent);
+        printWindow.document.close();
+
+        // Wait for content to load then print
+        printWindow.onload = function() {
+            printWindow.print();
+        };
+
+        this.addActivity(`Generated PDF for paper: ${paper.title}`);
+    }
+
+    printPaper(paperId) {
+        const paper = this.questionPapers.find(p => p.id == paperId);
+        if (!paper) return;
+
+        this.printPaperData(paper);
+    }
+
+    printPaperData(paper) {
+        // Create print-friendly content
+        const printContent = `
+            <html>
+            <head>
+                <title>${paper.title} - Print</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    .paper-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+                    .paper-meta { font-size: 14px; color: #666; margin-bottom: 20px; }
+                    .instructions { background: #f9f9f9; padding: 15px; border-left: 4px solid #667eea; margin-bottom: 30px; }
+                    .content { line-height: 1.6; }
+                    .question { margin-bottom: 20px; }
+                    .question-number { font-weight: bold; color: #667eea; }
+                    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    @media print { body { margin: 20px; } .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="paper-title">${paper.title}</div>
+                    <div class="paper-meta">
+                        Subject: ${paper.subject} | Class: ${paper.class} | Duration: ${paper.duration} minutes | Total Marks: ${paper.totalMarks}
+                    </div>
+                </div>
+                ${paper.instructions ? `<div class="instructions"><strong>Instructions:</strong><br>${paper.instructions}</div>` : ''}
+                <div class="content">${paper.content}</div>
+            </body>
+            </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+
+        printWindow.onload = function() {
+            printWindow.print();
+        };
+
+        this.addActivity(`Printed paper: ${paper.title}`);
+    }
+
+    // Rich Text Editor Functions
+    formatText(command, value = null) {
+        document.execCommand(command, false, value);
+        document.getElementById('paperEditor').focus();
+    }
+
+    addQuestion() {
+        const editor = document.getElementById('paperEditor');
+        const questionNumber = editor.querySelectorAll('.question-number').length + 1;
+
+        const questionTemplate = `
+            <div class="question-template">
+                <div class="question-number">Question ${questionNumber}:</div>
+                <div class="question-text" contenteditable="true">Enter your question here...</div>
+                <ol class="options-list">
+                    <li><span class="option-letter">A)</span> <span contenteditable="true">Option A</span></li>
+                    <li><span class="option-letter">B)</span> <span contenteditable="true">Option B</span></li>
+                    <li><span class="option-letter">C)</span> <span contenteditable="true">Option C</span></li>
+                    <li><span class="option-letter">D)</span> <span contenteditable="true">Option D</span></li>
+                </ol>
+                <div class="correct-answer">Correct Answer: <span contenteditable="true">A</span></div>
+            </div>
+        `;
+
+        editor.innerHTML += questionTemplate;
+        editor.focus();
+    }
+
+    insertTable() {
+        const editor = document.getElementById('paperEditor');
+        const tableHTML = `
+            <table border="1" style="border-collapse: collapse; width: 100%; margin: 15px 0;">
+                <thead>
+                    <tr>
+                        <th contenteditable="true">Column 1</th>
+                        <th contenteditable="true">Column 2</th>
+                        <th contenteditable="true">Column 3</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td contenteditable="true">Row 1, Col 1</td>
+                        <td contenteditable="true">Row 1, Col 2</td>
+                        <td contenteditable="true">Row 1, Col 3</td>
+                    </tr>
+                    <tr>
+                        <td contenteditable="true">Row 2, Col 1</td>
+                        <td contenteditable="true">Row 2, Col 2</td>
+                        <td contenteditable="true">Row 2, Col 3</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        document.execCommand('insertHTML', false, tableHTML);
+        editor.focus();
+    }
+
+    previewPaper() {
+        const title = document.getElementById('paperTitle').value;
+        const subject = document.getElementById('paperSubject').value;
+        const classValue = document.getElementById('paperClass').value;
+        const duration = document.getElementById('paperDuration').value;
+        const totalMarks = document.getElementById('paperTotalMarks').value;
+        const instructions = document.getElementById('paperInstructions').value;
+        const content = document.getElementById('paperEditor').innerHTML;
+
+        if (!title || !subject || !classValue) {
+            alert('Please fill in the basic paper information first');
+            return;
+        }
+
+        const previewContent = `
+            <html>
+            <head>
+                <title>${title} - Preview</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    .paper-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+                    .paper-meta { font-size: 14px; color: #666; margin-bottom: 20px; }
+                    .instructions { background: #f9f9f9; padding: 15px; border-left: 4px solid #667eea; margin-bottom: 30px; }
+                    .content { white-space: pre-wrap; }
+                    .question { margin-bottom: 20px; }
+                    .question-number { font-weight: bold; color: #667eea; }
+                    table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="paper-title">${title}</div>
+                    <div class="paper-meta">
+                        Subject: ${subject} | Class: ${classValue} | Duration: ${duration || '120'} minutes | Total Marks: ${totalMarks || '100'}
+                    </div>
+                </div>
+                ${instructions ? `<div class="instructions"><strong>Instructions:</strong><br>${instructions}</div>` : ''}
+                <div class="content">${content}</div>
+            </body>
+            </html>
+        `;
+
+        const previewWindow = window.open('', '_blank');
+        previewWindow.document.write(previewContent);
+        previewWindow.document.close();
+    }
+
+    loadExamSchedules() {
         const examsList = document.getElementById('examsList');
-        examsList.innerHTML = '<p>Exam management coming soon!</p>';
+        examsList.innerHTML = '<p>Exam scheduling feature coming soon!</p>';
+    }
+
+    loadExamResults() {
+        const resultsList = document.getElementById('resultsList');
+        resultsList.innerHTML = '<p>Exam results feature coming soon!</p>';
+    }
+
+    generateReportCards() {
+        alert('Report card generation feature coming soon!');
+    }
+
+    filterPapers() {
+        this.loadPapers();
     }
 
     // Report Generation
@@ -1417,6 +1816,101 @@ function emptyRecycleBin() {
 
 function restoreAllFromRecycleBin() {
     schoolSystem.restoreAllFromRecycleBin();
+}
+
+// Paper creation global functions
+function showPaperCreator() {
+    schoolSystem.showPaperCreator();
+}
+
+function savePaper() {
+    schoolSystem.savePaper();
+}
+
+function generatePDF() {
+    // This will be called from within the paper creator modal
+    // The actual paper ID will be determined from the editor's data attribute
+    const editor = document.getElementById('paperEditor');
+    const paperId = editor.getAttribute('data-paper-id');
+    if (paperId) {
+        schoolSystem.generatePDFFromPaper(parseInt(paperId));
+    } else {
+        // Generate PDF for current paper being created
+        const title = document.getElementById('paperTitle').value;
+        const subject = document.getElementById('paperSubject').value;
+        const classValue = document.getElementById('paperClass').value;
+        const duration = document.getElementById('paperDuration').value;
+        const totalMarks = document.getElementById('paperTotalMarks').value;
+        const instructions = document.getElementById('paperInstructions').value;
+        const content = document.getElementById('paperEditor').innerHTML;
+
+        if (!title || !subject || !classValue) {
+            alert('Please fill in the basic paper information first');
+            return;
+        }
+
+        const paperData = {
+            title, subject, class: classValue, duration, totalMarks, instructions, content
+        };
+
+        schoolSystem.generatePDFFromPaperData(paperData);
+    }
+}
+
+function printPaper() {
+    // Similar logic as generatePDF but for printing
+    const editor = document.getElementById('paperEditor');
+    const paperId = editor.getAttribute('data-paper-id');
+    if (paperId) {
+        schoolSystem.printPaper(parseInt(paperId));
+    } else {
+        const title = document.getElementById('paperTitle').value;
+        const subject = document.getElementById('paperSubject').value;
+        const classValue = document.getElementById('paperClass').value;
+        const duration = document.getElementById('paperDuration').value;
+        const totalMarks = document.getElementById('paperTotalMarks').value;
+        const instructions = document.getElementById('paperInstructions').value;
+        const content = document.getElementById('paperEditor').innerHTML;
+
+        if (!title || !subject || !classValue) {
+            alert('Please fill in the basic paper information first');
+            return;
+        }
+
+        const paperData = {
+            title, subject, class: classValue, duration, totalMarks, instructions, content
+        };
+
+        schoolSystem.printPaperData(paperData);
+    }
+}
+
+function formatText(command, value = null) {
+    schoolSystem.formatText(command, value);
+}
+
+function addQuestion() {
+    schoolSystem.addQuestion();
+}
+
+function insertTable() {
+    schoolSystem.insertTable();
+}
+
+function previewPaper() {
+    schoolSystem.previewPaper();
+}
+
+function showExamTab(tabName) {
+    schoolSystem.showExamTab(tabName);
+}
+
+function loadPapers() {
+    schoolSystem.loadPapers();
+}
+
+function filterPapers() {
+    schoolSystem.filterPapers();
 }
 
 // Initialize the system when page loads
