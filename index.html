@@ -791,6 +791,100 @@
         </div>
     </div>
 
+    <!-- Teacher Modal -->
+    <div id="teacherModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('teacherModal')">&times;</span>
+            <h3 id="teacherModalTitle">Add Teacher</h3>
+            <form id="teacherForm">
+                <input type="hidden" id="teacherId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="teacherName">Teacher Name *</label>
+                        <input type="text" id="teacherName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fatherName">Father's Name *</label>
+                        <input type="text" id="fatherName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="teacherDOB">Date of Birth *</label>
+                        <input type="date" id="teacherDOB" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="aadharNumber">Aadhar Number *</label>
+                        <input type="text" id="aadharNumber" required maxlength="12" pattern="[0-9]{12}" placeholder="12-digit Aadhar number">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="subjectSpecialization">Subject Specialization *</label>
+                        <select id="subjectSpecialization" required>
+                            <option value="">Select Subject</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Science">Science</option>
+                            <option value="English">English</option>
+                            <option value="Social Studies">Social Studies</option>
+                            <option value="Hindi">Hindi</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Physical Education">Physical Education</option>
+                            <option value="Arts">Arts</option>
+                            <option value="Music">Music</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="yearsOfExperience">Years of Experience *</label>
+                        <input type="number" id="yearsOfExperience" required min="0" max="50" placeholder="Years of experience">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="teacherEmail">Email</label>
+                        <input type="email" id="teacherEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="teacherContact">Contact Number *</label>
+                        <input type="tel" id="teacherContact" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="teacherAddress">Address *</label>
+                        <textarea id="teacherAddress" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="qualification">Qualification</label>
+                        <select id="qualification">
+                            <option value="">Select Qualification</option>
+                            <option value="B.Ed">B.Ed</option>
+                            <option value="M.Ed">M.Ed</option>
+                            <option value="B.A">B.A</option>
+                            <option value="M.A">M.A</option>
+                            <option value="B.Sc">B.Sc</option>
+                            <option value="M.Sc">M.Sc</option>
+                            <option value="B.Com">B.Com</option>
+                            <option value="M.Com">M.Com</option>
+                            <option value="Ph.D">Ph.D</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Teacher
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('teacherModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modals -->
     <div id="studentModal" class="modal">
         <div class="modal-content">

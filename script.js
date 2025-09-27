@@ -39,6 +39,7 @@ class SchoolManagementSystem {
         // Forms
         document.getElementById('admissionForm').addEventListener('submit', (e) => this.handleAdmission(e));
         document.getElementById('studentForm').addEventListener('submit', (e) => this.handleStudentSubmit(e));
+        document.getElementById('teacherForm').addEventListener('submit', (e) => this.handleTeacherSubmit(e));
         
         // Settings Forms
         document.getElementById('schoolInfoForm').addEventListener('submit', (e) => this.saveSchoolInfo(e));
@@ -274,17 +275,389 @@ class SchoolManagementSystem {
 
     // Teacher Management
     showAddTeacherForm() {
-        // Similar to student form but for teachers
-        alert('Teacher management will be implemented next');
+        document.getElementById('teacherModalTitle').textContent = 'Add Teacher';
+        document.getElementById('teacherId').value = '';
+        document.getElementById('teacherForm').reset();
+        document.getElementById('teacherModal').style.display = 'block';
+    }
+
+    editTeacher(teacherId) {
+        const teacher = this.teachers.find(t => t.id == teacherId);
+        if (!teacher) return;
+
+        document.getElementById('teacherModalTitle').textContent = 'Edit Teacher';
+        document.getElementById('teacherId').value = teacher.id;
+        document.getElementById('teacherName').value = teacher.name;
+        document.getElementById('fatherName').value = teacher.fatherName;
+        document.getElementById('teacherDOB').value = teacher.dob;
+        document.getElementById('aadharNumber').value = teacher.aadharNumber;
+        document.getElementById('subjectSpecialization').value = teacher.subject;
+        document.getElementById('yearsOfExperience').value = teacher.experience;
+        document.getElementById('teacherEmail').value = teacher.email;
+        document.getElementById('teacherContact').value = teacher.contact;
+        document.getElementById('teacherAddress').value = teacher.address;
+        document.getElementById('qualification').value = teacher.qualification;
+
+        document.getElementById('teacherModal').style.display = 'block';
+    }
+
+    handleTeacherSubmit(e) {
+        e.preventDefault();
+
+        // Get form data
+        const teacherName = document.getElementById('teacherName').value;
+        const fatherName = document.getElementById('fatherName').value;
+        const dob = document.getElementById('teacherDOB').value;
+        const aadharNumber = document.getElementById('aadharNumber').value;
+        const subject = document.getElementById('subjectSpecialization').value;
+        const experience = document.getElementById('yearsOfExperience').value;
+        const email = document.getElementById('teacherEmail').value;
+        const contact = document.getElementById('teacherContact').value;
+        const address = document.getElementById('teacherAddress').value;
+        const qualification = document.getElementById('qualification').value;
+
+        // Validate required fields
+        if (!teacherName || !fatherName || !dob || !aadharNumber || !subject || !experience || !contact || !address) {
+            alert('Please fill in all required fields marked with *');
+            return;
+        }
+
+        // Validate Aadhar number (must be 12 digits)
+        if (!/^\d{12}$/.test(aadharNumber)) {
+            alert('Aadhar number must be exactly 12 digits');
+            return;
+        }
+
+        // Validate DOB (must be valid date and not in future)
+        const dobDate = new Date(dob);
+        const today = new Date();
+        if (dobDate >= today) {
+            alert('Date of Birth must be in the past');
+            return;
+        }
+
+        // Validate experience (must be between 0 and 50)
+        const expNum = parseInt(experience);
+        if (expNum < 0 || expNum > 50) {
+            alert('Years of experience must be between 0 and 50');
+            return;
+        }
+
+        const teacherData = {
+            id: document.getElementById('teacherId').value || Date.now(),
+            name: teacherName,
+            fatherName: fatherName,
+            dob: dob,
+            aadharNumber: aadharNumber,
+            subject: subject,
+            experience: expNum,
+            email: email,
+            contact: contact,
+            address: address,
+            qualification: qualification,
+            joinDate: new Date().toISOString()
+        };
+
+        // Check if editing existing teacher or adding new
+        const existingIndex = this.teachers.findIndex(t => t.id == teacherData.id);
+        if (existingIndex >= 0) {
+            this.teachers[existingIndex] = teacherData;
+            this.addActivity(`Updated teacher: ${teacherData.name}`);
+        } else {
+            this.teachers.push(teacherData);
+            this.addActivity(`Added new teacher: ${teacherData.name}`);
+        }
+
+        // Save to localStorage (for now - will be replaced with API call)
+        localStorage.setItem('teachers', JSON.stringify(this.teachers));
+
+        document.getElementById('teacherModal').style.display = 'none';
+        this.loadTeachers();
+        this.loadDashboardData();
+
+        alert('Teacher saved successfully!');
     }
 
     loadTeachers() {
         const teachersList = document.getElementById('teachersList');
-        teachersList.innerHTML = '<p>Teacher management coming soon!</p>';
+        const subjectFilter = document.getElementById('subjectFilter').value;
+        const searchTerm = document.getElementById('teacherSearch').value.toLowerCase();
+
+        let filteredTeachers = this.teachers;
+
+        if (subjectFilter) {
+            filteredTeachers = filteredTeachers.filter(t => t.subject === subjectFilter);
+        }
+
+        if (searchTerm) {
+            filteredTeachers = filteredTeachers.filter(t =>
+                t.name.toLowerCase().includes(searchTerm) ||
+                t.subject.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (filteredTeachers.length === 0) {
+            teachersList.innerHTML = '<p>No teachers found. Add your first teacher!</p>';
+            return;
+        }
+
+        teachersList.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Subject</th>
+                        <th>Experience</th>
+                        <th>Contact</th>
+                        <th>Qualification</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredTeachers.map(teacher => `
+                        <tr>
+                            <td>${teacher.name}</td>
+                            <td>${teacher.subject}</td>
+                            <td>${teacher.experience} years</td>
+                            <td>${teacher.contact}</td>
+                            <td>${teacher.qualification || 'Not specified'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="schoolSystem.editTeacher(${teacher.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTeacher(${teacher.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    deleteTeacher(teacherId) {
+        if (confirm('Are you sure you want to delete this teacher?')) {
+            const teacher = this.teachers.find(t => t.id == teacherId);
+            this.teachers = this.teachers.filter(t => t.id != teacherId);
+            localStorage.setItem('teachers', JSON.stringify(this.teachers));
+            this.addActivity(`Deleted teacher: ${teacher.name}`);
+            this.loadTeachers();
+            this.loadDashboardData();
+        }
     }
 
     filterTeachers() {
-        // Filter implementation
+        this.loadTeachers();
+    }
+
+    editTeacher(teacherId) {
+        const teacher = this.teachers.find(t => t.id == teacherId);
+        if (!teacher) return;
+
+        document.getElementById('teacherModalTitle').textContent = 'Edit Teacher';
+        document.getElementById('teacherId').value = teacher.id;
+        document.getElementById('teacherName').value = teacher.name;
+        document.getElementById('fatherName').value = teacher.fatherName;
+        document.getElementById('teacherDOB').value = teacher.dob;
+        document.getElementById('aadharNumber').value = teacher.aadharNumber;
+        document.getElementById('subjectSpecialization').value = teacher.subject;
+        document.getElementById('yearsOfExperience').value = teacher.experience;
+        document.getElementById('teacherEmail').value = teacher.email;
+        document.getElementById('teacherContact').value = teacher.contact;
+        document.getElementById('teacherAddress').value = teacher.address;
+        document.getElementById('qualification').value = teacher.qualification;
+
+        document.getElementById('teacherModal').style.display = 'block';
+    }
+
+    handleTeacherSubmit(e) {
+        e.preventDefault();
+
+        // Get form data
+        const teacherName = document.getElementById('teacherName').value;
+        const fatherName = document.getElementById('fatherName').value;
+        const dob = document.getElementById('teacherDOB').value;
+        const aadharNumber = document.getElementById('aadharNumber').value;
+        const subject = document.getElementById('subjectSpecialization').value;
+        const experience = document.getElementById('yearsOfExperience').value;
+        const email = document.getElementById('teacherEmail').value;
+        const contact = document.getElementById('teacherContact').value;
+        const address = document.getElementById('teacherAddress').value;
+        const qualification = document.getElementById('qualification').value;
+
+        // Validate required fields
+        if (!teacherName || !fatherName || !dob || !aadharNumber || !subject || !experience || !contact || !address) {
+            alert('Please fill in all required fields marked with *');
+            return;
+        }
+
+        // Validate Aadhar number (must be 12 digits)
+        if (!/^\d{12}$/.test(aadharNumber)) {
+            alert('Aadhar number must be exactly 12 digits');
+            return;
+        }
+
+        // Validate DOB (must be valid date and not in future)
+        const dobDate = new Date(dob);
+        const today = new Date();
+        if (dobDate >= today) {
+            alert('Date of Birth must be in the past');
+            return;
+        }
+
+        // Validate experience (must be between 0 and 50)
+        const expNum = parseInt(experience);
+        if (expNum < 0 || expNum > 50) {
+            alert('Years of experience must be between 0 and 50');
+            return;
+        }
+
+        const teacherData = {
+            id: document.getElementById('teacherId').value || Date.now(),
+            name: teacherName,
+            fatherName: fatherName,
+            dob: dob,
+            aadharNumber: aadharNumber,
+            subject: subject,
+            experience: expNum,
+            email: email,
+            contact: contact,
+            address: address,
+            qualification: qualification,
+            joinDate: new Date().toISOString()
+        };
+
+        // Check if editing existing teacher or adding new
+        const existingIndex = this.teachers.findIndex(t => t.id == teacherData.id);
+        if (existingIndex >= 0) {
+            this.teachers[existingIndex] = teacherData;
+            this.addActivity(`Updated teacher: ${teacherData.name}`);
+        } else {
+            this.teachers.push(teacherData);
+            this.addActivity(`Added new teacher: ${teacherData.name}`);
+        }
+
+        // Save to localStorage (for now - will be replaced with API call)
+        localStorage.setItem('teachers', JSON.stringify(this.teachers));
+
+        document.getElementById('teacherModal').style.display = 'none';
+        this.loadTeachers();
+        this.loadDashboardData();
+
+        alert('Teacher saved successfully!');
+    }
+
+    loadTeachers() {
+        const teachersList = document.getElementById('teachersList');
+        const subjectFilter = document.getElementById('subjectFilter').value;
+        const searchTerm = document.getElementById('teacherSearch').value.toLowerCase();
+
+        let filteredTeachers = this.teachers;
+
+        if (subjectFilter) {
+            filteredTeachers = filteredTeachers.filter(t => t.subject === subjectFilter);
+        }
+
+        if (searchTerm) {
+            filteredTeachers = filteredTeachers.filter(t =>
+                t.name.toLowerCase().includes(searchTerm) ||
+                t.subject.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (filteredTeachers.length === 0) {
+            teachersList.innerHTML = '<p>No teachers found. Add your first teacher!</p>';
+            return;
+        }
+
+        teachersList.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Subject</th>
+                        <th>Experience</th>
+                        <th>Contact</th>
+                        <th>Qualification</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredTeachers.map(teacher => `
+                        <tr>
+                            <td>${teacher.name}</td>
+                            <td>${teacher.subject}</td>
+                            <td>${teacher.experience} years</td>
+                            <td>${teacher.contact}</td>
+                            <td>${teacher.qualification || 'Not specified'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="schoolSystem.editTeacher(${teacher.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTeacher(${teacher.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    deleteTeacher(teacherId) {
+        if (confirm('Are you sure you want to delete this teacher?')) {
+            const teacher = this.teachers.find(t => t.id == teacherId);
+            this.teachers = this.teachers.filter(t => t.id != teacherId);
+            localStorage.setItem('teachers', JSON.stringify(this.teachers));
+            this.addActivity(`Deleted teacher: ${teacher.name}`);
+            this.loadTeachers();
+            this.loadDashboardData();
+        }
+    }
+
+    filterTeachers() {
+        this.loadTeachers();
+    }
+
+    // API Integration Methods (for future backend connection)
+    async saveTeacherToBackend(teacherData) {
+        try {
+            const response = await fetch('/api/teachers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(teacherData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save teacher to backend');
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (error) {
+            console.error('Error saving teacher to backend:', error);
+            throw error;
+        }
+    }
+
+    async fetchTeachersFromBackend() {
+        try {
+            const response = await fetch('/api/teachers');
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch teachers from backend');
+            }
+
+            const teachers = await response.json();
+            return teachers;
+        } catch (error) {
+            console.error('Error fetching teachers from backend:', error);
+            throw error;
+        }
     }
 
     // Admission Management
