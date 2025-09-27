@@ -14,6 +14,8 @@ class SchoolManagementSystem {
         this.questionPapers = JSON.parse(localStorage.getItem('questionPapers')) || [];
         this.examSchedules = JSON.parse(localStorage.getItem('examSchedules')) || [];
         this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
+        this.feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
+        this.feeStructures = JSON.parse(localStorage.getItem('feeStructures')) || [];
         
         this.init();
     }

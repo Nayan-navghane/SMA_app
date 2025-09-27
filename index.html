@@ -37,6 +37,9 @@
                 <a href="#" class="nav-link" data-section="exams">
                     <i class="fas fa-file-alt"></i> Exams
                 </a>
+                <a href="#" class="nav-link" data-section="fees">
+                    <i class="fas fa-rupee-sign"></i> Fee Management
+                </a>
                 <a href="#" class="nav-link" data-section="reports">
                     <i class="fas fa-chart-bar"></i> Reports
                 </a>
@@ -401,6 +404,215 @@
                     </div>
                     <div id="resultsList" class="data-table">
                         <p>Select class and subject to view results</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Fee Management Section -->
+            <section id="fees" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-rupee-sign"></i> Fee Management</h2>
+                    <div class="fee-tabs">
+                        <button type="button" class="tab-btn active" onclick="showFeeTab('collect')">
+                            <i class="fas fa-plus-circle"></i> Collect Fee
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showFeeTab('records')">
+                            <i class="fas fa-list"></i> Fee Records
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showFeeTab('structure')">
+                            <i class="fas fa-cog"></i> Fee Structure
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showFeeTab('reports')">
+                            <i class="fas fa-chart-bar"></i> Fee Reports
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Fee Collection Tab -->
+                <div id="collectFeeTab" class="fee-tab-content active">
+                    <div class="fee-collection-form">
+                        <div class="student-selector">
+                            <div class="form-group">
+                                <label for="feeStudentSearch">Search Student *</label>
+                                <input type="text" id="feeStudentSearch" placeholder="Enter student name or roll number..." onkeyup="searchStudentsForFee()">
+                                <div id="studentSuggestions" class="suggestions-list"></div>
+                            </div>
+                        </div>
+
+                        <div id="selectedStudentInfo" class="selected-student" style="display: none;">
+                            <h4>Selected Student:</h4>
+                            <div class="student-details-card">
+                                <p><strong>Name:</strong> <span id="selectedStudentName"></span></p>
+                                <p><strong>Roll No:</strong> <span id="selectedStudentRoll"></span></p>
+                                <p><strong>Class:</strong> <span id="selectedStudentClass"></span></p>
+                                <p><strong>Parent:</strong> <span id="selectedStudentParent"></span></p>
+                            </div>
+                        </div>
+
+                        <form id="feeCollectionForm">
+                            <input type="hidden" id="selectedStudentId" name="studentId">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="feeType">Fee Type *</label>
+                                    <select id="feeType" required>
+                                        <option value="">Select Fee Type</option>
+                                        <option value="tuition">Tuition Fee</option>
+                                        <option value="admission">Admission Fee</option>
+                                        <option value="exam">Exam Fee</option>
+                                        <option value="library">Library Fee</option>
+                                        <option value="sports">Sports Fee</option>
+                                        <option value="transport">Transport Fee</option>
+                                        <option value="activity">Activity Fee</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="feeAmount">Amount *</label>
+                                    <input type="number" id="feeAmount" required min="1" step="0.01" placeholder="Enter amount">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="feeMonth">Month/Period *</label>
+                                    <select id="feeMonth" required>
+                                        <option value="">Select Month</option>
+                                        <option value="January">January</option>
+                                        <option value="February">February</option>
+                                        <option value="March">March</option>
+                                        <option value="April">April</option>
+                                        <option value="May">May</option>
+                                        <option value="June">June</option>
+                                        <option value="July">July</option>
+                                        <option value="August">August</option>
+                                        <option value="September">September</option>
+                                        <option value="October">October</option>
+                                        <option value="November">November</option>
+                                        <option value="December">December</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="feeYear">Year *</label>
+                                    <select id="feeYear" required>
+                                        <option value="">Select Year</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2026">2026</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="paymentMethod">Payment Method *</label>
+                                    <select id="paymentMethod" required>
+                                        <option value="">Select Payment Method</option>
+                                        <option value="cash">Cash</option>
+                                        <option value="card">Card</option>
+                                        <option value="upi">UPI</option>
+                                        <option value="bank_transfer">Bank Transfer</option>
+                                        <option value="cheque">Cheque</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="paymentDate">Payment Date *</label>
+                                    <input type="date" id="paymentDate" required value="">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="feeDescription">Description</label>
+                                    <textarea id="feeDescription" rows="2" placeholder="Optional description or notes..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lateFee">Late Fee (if any)</label>
+                                    <input type="number" id="lateFee" min="0" step="0.01" placeholder="Late fee amount">
+                                </div>
+                            </div>
+                            <div class="fee-summary">
+                                <div class="summary-row">
+                                    <span>Fee Amount:</span>
+                                    <span id="summaryAmount">₹0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Late Fee:</span>
+                                    <span id="summaryLateFee">₹0.00</span>
+                                </div>
+                                <div class="summary-row total">
+                                    <span><strong>Total Amount:</strong></span>
+                                    <span id="summaryTotal"><strong>₹0.00</strong></span>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-receipt"></i> Generate Receipt
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="resetFeeForm()">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Fee Records Tab -->
+                <div id="feeRecordsTab" class="fee-tab-content">
+                    <div class="fee-controls">
+                        <select id="feeRecordsClassFilter" onchange="loadFeeRecords()">
+                            <option value="">All Classes</option>
+                        </select>
+                        <select id="feeRecordsMonthFilter" onchange="loadFeeRecords()">
+                            <option value="">All Months</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                        <input type="text" id="feeRecordsSearch" placeholder="Search by student name..." onkeyup="loadFeeRecords()">
+                    </div>
+                    <div id="feeRecordsList" class="fee-records-container">
+                        <p>No fee records found.</p>
+                    </div>
+                </div>
+
+                <!-- Fee Structure Tab -->
+                <div id="feeStructureTab" class="fee-tab-content">
+                    <div class="fee-structure-manager">
+                        <div class="structure-controls">
+                            <button class="btn btn-primary" onclick="showFeeStructureForm()">
+                                <i class="fas fa-plus"></i> Add Fee Structure
+                            </button>
+                            <button class="btn btn-secondary" onclick="loadFeeStructures()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="feeStructuresList" class="fee-structures-container">
+                            <p>No fee structures defined. Add fee structures for different classes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fee Reports Tab -->
+                <div id="feeReportsTab" class="fee-tab-content">
+                    <div class="fee-reports-options">
+                        <button class="btn btn-primary" onclick="generateFeeCollectionReport()">
+                            <i class="fas fa-chart-line"></i> Collection Report
+                        </button>
+                        <button class="btn btn-secondary" onclick="generatePendingFeesReport()">
+                            <i class="fas fa-clock"></i> Pending Fees
+                        </button>
+                        <button class="btn btn-success" onclick="generateFeeSummaryReport()">
+                            <i class="fas fa-file-invoice-dollar"></i> Fee Summary
+                        </button>
+                    </div>
+                    <div id="feeReportsContainer" class="fee-reports-display">
+                        <p>Select a report type to generate</p>
                     </div>
                 </div>
             </section>
