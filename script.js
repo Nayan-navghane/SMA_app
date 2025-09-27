@@ -291,29 +291,71 @@ class SchoolManagementSystem {
     handleAdmission(e) {
         e.preventDefault();
 
+        const studentName = document.getElementById('studentName').value;
+        const studentClass = document.getElementById('admissionClass').value;
+        const parentName = document.getElementById('parentName').value;
+        const contactNumber = document.getElementById('contactNumber').value;
+        const email = document.getElementById('email').value;
+        const dateOfBirth = document.getElementById('dateOfBirth').value;
+        const address = document.getElementById('address').value;
+        const previousSchool = document.getElementById('previousSchool').value;
+
+        // Validate required fields
+        if (!studentName || !studentClass || !parentName || !contactNumber || !dateOfBirth || !address) {
+            alert('Please fill in all required fields marked with *');
+            return;
+        }
+
+        // Generate roll number
+        const rollNumber = this.generateRollNumber(studentClass);
+
+        // Create student record directly from admission form
+        const studentData = {
+            id: Date.now(),
+            name: studentName,
+            class: studentClass,
+            rollNo: rollNumber,
+            dateOfBirth: dateOfBirth,
+            parentName: parentName,
+            contact: contactNumber,
+            email: email,
+            address: address,
+            previousSchool: previousSchool,
+            admissionDate: new Date().toISOString(),
+            admissionType: 'direct' // Mark as directly admitted
+        };
+
+        // Add to students
+        this.students.push(studentData);
+        localStorage.setItem('students', JSON.stringify(this.students));
+
+        // Also save to admissions for record keeping
         const admissionData = {
             id: Date.now(),
-            studentName: document.getElementById('studentName').value,
-            class: document.getElementById('admissionClass').value,
-            parentName: document.getElementById('parentName').value,
-            contactNumber: document.getElementById('contactNumber').value,
-            email: document.getElementById('email').value,
-            dateOfBirth: document.getElementById('dateOfBirth').value,
-            address: document.getElementById('address').value,
-            previousSchool: document.getElementById('previousSchool').value,
+            studentName: studentName,
+            class: studentClass,
+            parentName: parentName,
+            contactNumber: contactNumber,
+            email: email,
+            dateOfBirth: dateOfBirth,
+            address: address,
+            previousSchool: previousSchool,
             applicationDate: new Date().toISOString(),
-            status: 'pending'
+            status: 'approved', // Auto-approved for direct admission
+            rollNumber: rollNumber,
+            admissionType: 'direct'
         };
 
         this.admissions.push(admissionData);
         localStorage.setItem('admissions', JSON.stringify(this.admissions));
-        
-        this.addActivity(`New admission application: ${admissionData.studentName} for class ${admissionData.class}`);
-        
+
+        this.addActivity(`Direct admission: ${studentName} enrolled in class ${studentClass} with Roll No: ${rollNumber}`);
+
         document.getElementById('admissionForm').reset();
         this.loadDashboardData();
-        
-        alert('Admission application submitted successfully!');
+        this.populateClassFilters(); // Refresh class filters with new student
+
+        alert(`Student ${studentName} has been successfully enrolled!\nRoll Number: ${rollNumber}\nClass: ${studentClass}`);
     }
 
     showAdmissionTab(tabName) {
