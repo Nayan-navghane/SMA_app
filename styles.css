@@ -1006,6 +1006,47 @@ body {
     border-left: 4px solid #28a745;
 }
 
+.admission-card.recycled {
+    border-left: 4px solid #ffc107;
+    background-color: #fff8e1;
+}
+
+/* Recycle Bin Styles */
+.recycle-actions {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.recycle-actions .btn {
+    font-size: 0.9rem;
+}
+
+.recycled-item {
+    opacity: 0.8;
+    position: relative;
+}
+
+.recycled-item::before {
+    content: "🗑️";
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 1.2rem;
+    z-index: 10;
+}
+
+.recycled-info {
+    background-color: #fff3cd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #856404;
+    border-left: 3px solid #ffc107;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;

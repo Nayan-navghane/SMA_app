@@ -168,6 +168,9 @@
                         <button type="button" class="tab-btn" onclick="showAdmissionTab('processed')">
                             <i class="fas fa-check-circle"></i> Processed
                         </button>
+                        <button type="button" class="tab-btn" onclick="showAdmissionTab('recycle')">
+                            <i class="fas fa-recycle"></i> Recycle Bin
+                        </button>
                     </div>
                 </div>
                 
@@ -275,6 +278,27 @@
                     </div>
                     <div id="processedAdmissionsList" class="admissions-list">
                         <p>No processed admissions found.</p>
+                    </div>
+                </div>
+
+                <!-- Recycle Bin -->
+                <div id="recycleBin" class="admission-tab-content">
+                    <div class="admission-stats">
+                        <div class="stat-badge">
+                            <span class="stat-number" id="recycleCount">0</span>
+                            <span class="stat-label">In Recycle Bin</span>
+                        </div>
+                    </div>
+                    <div class="recycle-actions">
+                        <button class="btn btn-warning" onclick="emptyRecycleBin()">
+                            <i class="fas fa-trash"></i> Empty Recycle Bin
+                        </button>
+                        <button class="btn btn-secondary" onclick="restoreAllFromRecycleBin()">
+                            <i class="fas fa-undo"></i> Restore All
+                        </button>
+                    </div>
+                    <div id="recycleBinList" class="admissions-list">
+                        <p>Recycle bin is empty.</p>
                     </div>
                 </div>
             </section>

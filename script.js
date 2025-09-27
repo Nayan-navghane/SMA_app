@@ -10,6 +10,7 @@ class SchoolManagementSystem {
         this.schedules = JSON.parse(localStorage.getItem('schedules')) || {};
         this.activities = JSON.parse(localStorage.getItem('activities')) || [];
         this.settings = JSON.parse(localStorage.getItem('settings')) || this.getDefaultSettings();
+        this.recycleBin = JSON.parse(localStorage.getItem('recycleBin')) || [];
         
         this.init();
     }
@@ -339,6 +340,9 @@ class SchoolManagementSystem {
             case 'processed':
                 this.loadProcessedAdmissions();
                 break;
+            case 'recycle':
+                this.loadRecycleBin();
+                break;
         }
     }
 
@@ -497,15 +501,178 @@ class SchoolManagementSystem {
         if (!admission) return;
 
         if (confirm(`Are you sure you want to reject the admission application for ${admission.studentName}?`)) {
-            admission.status = 'rejected';
-            admission.processedDate = new Date().toISOString();
+            // Move to recycle bin instead of just marking as rejected
+            this.moveToRecycleBin(admission);
+
+            // Remove from admissions
+            this.admissions = this.admissions.filter(a => a.id != admissionId);
             localStorage.setItem('admissions', JSON.stringify(this.admissions));
 
-            this.addActivity(`Rejected admission: ${admission.studentName}`);
+            this.addActivity(`Moved to recycle bin: ${admission.studentName}`);
             this.loadPendingAdmissions();
             this.loadDashboardData();
-            
-            alert(`Admission application for ${admission.studentName} has been rejected.`);
+
+            alert(`Admission application for ${admission.studentName} has been moved to Recycle Bin.`);
+        }
+    }
+
+    moveToRecycleBin(admission) {
+        const recycleItem = {
+            ...admission,
+            movedToRecycle: new Date().toISOString(),
+            originalStatus: admission.status
+        };
+
+        this.recycleBin.push(recycleItem);
+        localStorage.setItem('recycleBin', JSON.stringify(this.recycleBin));
+    }
+
+    loadRecycleBin() {
+        const recycleList = document.getElementById('recycleBinList');
+
+        if (this.recycleBin.length === 0) {
+            recycleList.innerHTML = '<p>Recycle bin is empty.</p>';
+            return;
+        }
+
+        recycleList.innerHTML = this.recycleBin.map(item => `
+            <div class="admission-card recycled">
+                <div class="recycled-info">
+                    <i class="fas fa-trash"></i>
+                    Moved to Recycle Bin on ${this.formatDate(item.movedToRecycle)}
+                </div>
+                <div class="admission-header">
+                    <div class="admission-info">
+                        <h4>${item.studentName}</h4>
+                        <div class="admission-meta">
+                            <span><i class="fas fa-calendar"></i> ${this.formatDate(item.applicationDate)}</span>
+                            <span><i class="fas fa-graduation-cap"></i> Class ${item.class}</span>
+                        </div>
+                    </div>
+                    <div class="admission-status status-rejected">Rejected</div>
+                </div>
+                <div class="admission-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Parent/Guardian</div>
+                        <div class="detail-value">${item.parentName}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Contact</div>
+                        <div class="detail-value">${item.contactNumber}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Rejection Date</div>
+                        <div class="detail-value">${this.formatDate(item.movedToRecycle)}</div>
+                    </div>
+                </div>
+                <div class="admission-actions">
+                    <button class="btn btn-success btn-sm" onclick="schoolSystem.restoreFromRecycleBin(${item.id})">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="schoolSystem.permanentlyDeleteFromRecycleBin(${item.id})">
+                        <i class="fas fa-times"></i> Delete Forever
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Update recycle bin count
+        document.getElementById('recycleCount').textContent = this.recycleBin.length;
+    }
+
+    restoreFromRecycleBin(itemId) {
+        const item = this.recycleBin.find(item => item.id == itemId);
+        if (!item) return;
+
+        if (confirm(`Do you want to restore the admission application for ${item.studentName} back to pending status?`)) {
+            // Restore to admissions with pending status
+            const restoredAdmission = {
+                ...item,
+                status: 'pending',
+                restoredDate: new Date().toISOString()
+            };
+
+            // Remove restoredDate and movedToRecycle properties
+            delete restoredAdmission.restoredDate;
+            delete restoredAdmission.movedToRecycle;
+
+            this.admissions.push(restoredAdmission);
+            localStorage.setItem('admissions', JSON.stringify(this.admissions));
+
+            // Remove from recycle bin
+            this.recycleBin = this.recycleBin.filter(item => item.id != itemId);
+            localStorage.setItem('recycleBin', JSON.stringify(this.recycleBin));
+
+            this.addActivity(`Restored from recycle bin: ${item.studentName}`);
+            this.loadRecycleBin();
+            this.loadDashboardData();
+
+            alert(`Admission application for ${item.studentName} has been restored to pending status.`);
+        }
+    }
+
+    restoreAllFromRecycleBin() {
+        if (this.recycleBin.length === 0) {
+            alert('Recycle bin is empty.');
+            return;
+        }
+
+        if (confirm(`Do you want to restore all ${this.recycleBin.length} items from the recycle bin back to pending status?`)) {
+            this.recycleBin.forEach(item => {
+                const restoredAdmission = {
+                    ...item,
+                    status: 'pending',
+                    restoredDate: new Date().toISOString()
+                };
+
+                delete restoredAdmission.restoredDate;
+                delete restoredAdmission.movedToRecycle;
+
+                this.admissions.push(restoredAdmission);
+            });
+
+            // Clear recycle bin
+            this.recycleBin = [];
+            localStorage.setItem('recycleBin', JSON.stringify(this.recycleBin));
+            localStorage.setItem('admissions', JSON.stringify(this.admissions));
+
+            this.addActivity(`Restored all items from recycle bin (${this.recycleBin.length} items)`);
+            this.loadRecycleBin();
+            this.loadDashboardData();
+
+            alert(`All ${this.recycleBin.length} items have been restored to pending status.`);
+        }
+    }
+
+    permanentlyDeleteFromRecycleBin(itemId) {
+        const item = this.recycleBin.find(item => item.id == itemId);
+        if (!item) return;
+
+        if (confirm(`Are you sure you want to permanently delete the admission application for ${item.studentName}? This action cannot be undone.`)) {
+            this.recycleBin = this.recycleBin.filter(item => item.id != itemId);
+            localStorage.setItem('recycleBin', JSON.stringify(this.recycleBin));
+
+            this.addActivity(`Permanently deleted: ${item.studentName}`);
+            this.loadRecycleBin();
+
+            alert(`Admission application for ${item.studentName} has been permanently deleted.`);
+        }
+    }
+
+    emptyRecycleBin() {
+        if (this.recycleBin.length === 0) {
+            alert('Recycle bin is already empty.');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to permanently delete all ${this.recycleBin.length} items from the recycle bin? This action cannot be undone.`)) {
+            this.recycleBin = [];
+            localStorage.setItem('recycleBin', JSON.stringify(this.recycleBin));
+
+            this.addActivity(`Emptied recycle bin (${this.recycleBin.length} items permanently deleted)`);
+            this.loadRecycleBin();
+
+            alert(`Recycle bin has been emptied. All ${this.recycleBin.length} items have been permanently deleted.`);
         }
     }
 
@@ -1241,6 +1408,15 @@ function showAdmissionTab(tabName) {
 
 function filterProcessedAdmissions() {
     schoolSystem.filterProcessedAdmissions();
+}
+
+// Recycle bin global functions
+function emptyRecycleBin() {
+    schoolSystem.emptyRecycleBin();
+}
+
+function restoreAllFromRecycleBin() {
+    schoolSystem.restoreAllFromRecycleBin();
 }
 
 // Initialize the system when page loads
