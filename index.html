@@ -43,6 +43,9 @@
                 <a href="#" class="nav-link" data-section="staff">
                     <i class="fas fa-users"></i> Staff
                 </a>
+                <a href="#" class="nav-link" data-section="settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
             </div>
         </nav>
 
@@ -310,6 +313,207 @@
                 </div>
                 <div id="staffList" class="data-table">
                     <p>No staff members found. Add your first staff member!</p>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cog"></i> System Settings</h2>
+                </div>
+                
+                <div class="settings-container">
+                    <!-- School Information -->
+                    <div class="settings-card">
+                        <h3><i class="fas fa-school"></i> School Information</h3>
+                        <form id="schoolInfoForm" class="settings-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="schoolName">School Name *</label>
+                                    <input type="text" id="schoolName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="schoolCode">School Code</label>
+                                    <input type="text" id="schoolCode">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="schoolAddress">Address *</label>
+                                    <textarea id="schoolAddress" rows="3" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="schoolPhone">Phone Number *</label>
+                                    <input type="tel" id="schoolPhone" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="schoolEmail">Email</label>
+                                    <input type="email" id="schoolEmail">
+                                </div>
+                                <div class="form-group">
+                                    <label for="schoolWebsite">Website</label>
+                                    <input type="url" id="schoolWebsite">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save School Info
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- System Preferences -->
+                    <div class="settings-card">
+                        <h3><i class="fas fa-sliders-h"></i> System Preferences</h3>
+                        <form id="systemPrefsForm" class="settings-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="theme">Theme</label>
+                                    <select id="theme">
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="language">Language</label>
+                                    <select id="language">
+                                        <option value="en">English</option>
+                                        <option value="hi">Hindi</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="timezone">Timezone</label>
+                                    <select id="timezone">
+                                        <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                                        <option value="America/New_York">America/New_York (EST)</option>
+                                        <option value="Europe/London">Europe/London (GMT)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateFormat">Date Format</label>
+                                    <select id="dateFormat">
+                                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="autoBackup">
+                                        <span class="checkmark"></span>
+                                        Enable Auto Backup
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="notifications">
+                                        <span class="checkmark"></span>
+                                        Enable Notifications
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Preferences
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Data Management -->
+                    <div class="settings-card">
+                        <h3><i class="fas fa-database"></i> Data Management</h3>
+                        <div class="data-management">
+                            <div class="data-info">
+                                <h4>Storage Information</h4>
+                                <p><strong>Students:</strong> <span id="dataStudentsCount">0</span></p>
+                                <p><strong>Teachers:</strong> <span id="dataTeachersCount">0</span></p>
+                                <p><strong>Staff:</strong> <span id="dataStaffCount">0</span></p>
+                                <p><strong>Admissions:</strong> <span id="dataAdmissionsCount">0</span></p>
+                                <p><strong>Storage Used:</strong> <span id="storageUsed">0 KB</span></p>
+                            </div>
+                            <div class="data-actions">
+                                <button class="btn btn-secondary" onclick="exportData()">
+                                    <i class="fas fa-download"></i> Export Data
+                                </button>
+                                <button class="btn btn-secondary" onclick="importData()">
+                                    <i class="fas fa-upload"></i> Import Data
+                                </button>
+                                <button class="btn btn-warning" onclick="createBackup()">
+                                    <i class="fas fa-archive"></i> Create Backup
+                                </button>
+                                <button class="btn btn-danger" onclick="clearAllData()">
+                                    <i class="fas fa-trash"></i> Clear All Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="settings-card">
+                        <h3><i class="fas fa-shield-alt"></i> Security</h3>
+                        <form id="securityForm" class="settings-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="currentPassword">Current Password</label>
+                                    <input type="password" id="currentPassword">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input type="password" id="newPassword">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm New Password</label>
+                                    <input type="password" id="confirmPassword">
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="sessionTimeout">
+                                        <span class="checkmark"></span>
+                                        Auto Logout on Inactivity
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-key"></i> Update Password
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="generateSystemReport()">
+                                    <i class="fas fa-file-pdf"></i> System Report
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- About -->
+                    <div class="settings-card">
+                        <h3><i class="fas fa-info-circle"></i> About</h3>
+                        <div class="about-info">
+                            <div class="app-info">
+                                <h4>School Management System</h4>
+                                <p><strong>Version:</strong> 1.0.0</p>
+                                <p><strong>Developer:</strong> Supernova Corp</p>
+                                <p><strong>Last Updated:</strong> <span id="lastUpdated">Today</span></p>
+                                <p><strong>License:</strong> Educational Use</p>
+                            </div>
+                            <div class="system-info">
+                                <h4>System Information</h4>
+                                <p><strong>Browser:</strong> <span id="browserInfo">Chrome</span></p>
+                                <p><strong>Operating System:</strong> <span id="osInfo">Windows</span></p>
+                                <p><strong>Screen Resolution:</strong> <span id="screenResolution">1920x1080</span></p>
+                                <p><strong>Local Storage:</strong> <span id="localStorageStatus">Enabled</span></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>

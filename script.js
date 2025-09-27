@@ -9,6 +9,7 @@ class SchoolManagementSystem {
         this.exams = JSON.parse(localStorage.getItem('exams')) || [];
         this.schedules = JSON.parse(localStorage.getItem('schedules')) || {};
         this.activities = JSON.parse(localStorage.getItem('activities')) || [];
+        this.settings = JSON.parse(localStorage.getItem('settings')) || this.getDefaultSettings();
         
         this.init();
     }
@@ -34,6 +35,11 @@ class SchoolManagementSystem {
         // Forms
         document.getElementById('admissionForm').addEventListener('submit', (e) => this.handleAdmission(e));
         document.getElementById('studentForm').addEventListener('submit', (e) => this.handleStudentSubmit(e));
+        
+        // Settings Forms
+        document.getElementById('schoolInfoForm').addEventListener('submit', (e) => this.saveSchoolInfo(e));
+        document.getElementById('systemPrefsForm').addEventListener('submit', (e) => this.saveSystemPreferences(e));
+        document.getElementById('securityForm').addEventListener('submit', (e) => this.saveSecuritySettings(e));
 
         // Search and filters
         document.getElementById('studentSearch').addEventListener('input', () => this.filterStudents());
@@ -81,6 +87,9 @@ class SchoolManagementSystem {
                 break;
             case 'staff':
                 this.loadStaff();
+                break;
+            case 'settings':
+                this.loadSettings();
                 break;
         }
     }
@@ -479,6 +488,371 @@ class SchoolManagementSystem {
         // Filter implementation
     }
 
+    // Settings Management
+    getDefaultSettings() {
+        return {
+            schoolInfo: {
+                name: '',
+                code: '',
+                address: '',
+                phone: '',
+                email: '',
+                website: ''
+            },
+            preferences: {
+                theme: 'light',
+                language: 'en',
+                timezone: 'Asia/Kolkata',
+                dateFormat: 'DD/MM/YYYY',
+                autoBackup: false,
+                notifications: true
+            },
+            security: {
+                sessionTimeout: false
+            }
+        };
+    }
+
+    loadSettings() {
+        // Load school information
+        document.getElementById('schoolName').value = this.settings.schoolInfo.name || '';
+        document.getElementById('schoolCode').value = this.settings.schoolInfo.code || '';
+        document.getElementById('schoolAddress').value = this.settings.schoolInfo.address || '';
+        document.getElementById('schoolPhone').value = this.settings.schoolInfo.phone || '';
+        document.getElementById('schoolEmail').value = this.settings.schoolInfo.email || '';
+        document.getElementById('schoolWebsite').value = this.settings.schoolInfo.website || '';
+
+        // Load system preferences
+        document.getElementById('theme').value = this.settings.preferences.theme;
+        document.getElementById('language').value = this.settings.preferences.language;
+        document.getElementById('timezone').value = this.settings.preferences.timezone;
+        document.getElementById('dateFormat').value = this.settings.preferences.dateFormat;
+        document.getElementById('autoBackup').checked = this.settings.preferences.autoBackup;
+        document.getElementById('notifications').checked = this.settings.preferences.notifications;
+
+        // Load security settings
+        document.getElementById('sessionTimeout').checked = this.settings.security.sessionTimeout;
+
+        // Update data counts
+        this.updateDataCounts();
+        this.updateSystemInfo();
+    }
+
+    saveSchoolInfo(e) {
+        e.preventDefault();
+        
+        this.settings.schoolInfo = {
+            name: document.getElementById('schoolName').value,
+            code: document.getElementById('schoolCode').value,
+            address: document.getElementById('schoolAddress').value,
+            phone: document.getElementById('schoolPhone').value,
+            email: document.getElementById('schoolEmail').value,
+            website: document.getElementById('schoolWebsite').value
+        };
+
+        localStorage.setItem('settings', JSON.stringify(this.settings));
+        this.addActivity('Updated school information');
+        alert('School information saved successfully!');
+    }
+
+    saveSystemPreferences(e) {
+        e.preventDefault();
+        
+        this.settings.preferences = {
+            theme: document.getElementById('theme').value,
+            language: document.getElementById('language').value,
+            timezone: document.getElementById('timezone').value,
+            dateFormat: document.getElementById('dateFormat').value,
+            autoBackup: document.getElementById('autoBackup').checked,
+            notifications: document.getElementById('notifications').checked
+        };
+
+        localStorage.setItem('settings', JSON.stringify(this.settings));
+        this.addActivity('Updated system preferences');
+        alert('System preferences saved successfully!');
+    }
+
+    saveSecuritySettings(e) {
+        e.preventDefault();
+        
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        // Basic password validation
+        if (newPassword && newPassword.length < 6) {
+            alert('New password must be at least 6 characters long');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            alert('New password and confirmation do not match');
+            return;
+        }
+        
+        // Update security settings
+        this.settings.security = {
+            sessionTimeout: document.getElementById('sessionTimeout').checked
+        };
+        
+        localStorage.setItem('settings', JSON.stringify(this.settings));
+        this.addActivity('Updated security settings');
+        
+        // Reset form
+        document.getElementById('securityForm').reset();
+        alert('Security settings saved successfully!');
+    }
+
+    exportData() {
+        const data = {
+            students: this.students,
+            teachers: this.teachers,
+            staff: this.staff,
+            admissions: this.admissions,
+            attendance: this.attendance,
+            exams: this.exams,
+            schedules: this.schedules,
+            activities: this.activities,
+            settings: this.settings,
+            exportDate: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `school-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.addActivity('Exported school data');
+        alert('Data exported successfully!');
+    }
+
+    importData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    if (confirm('This will replace all existing data. Are you sure?')) {
+                        this.students = data.students || [];
+                        this.teachers = data.teachers || [];
+                        this.staff = data.staff || [];
+                        this.admissions = data.admissions || [];
+                        this.attendance = data.attendance || {};
+                        this.exams = data.exams || [];
+                        this.schedules = data.schedules || {};
+                        this.activities = data.activities || [];
+                        
+                        // Save to localStorage
+                        localStorage.setItem('students', JSON.stringify(this.students));
+                        localStorage.setItem('teachers', JSON.stringify(this.teachers));
+                        localStorage.setItem('staff', JSON.stringify(this.staff));
+                        localStorage.setItem('admissions', JSON.stringify(this.admissions));
+                        localStorage.setItem('attendance', JSON.stringify(this.attendance));
+                        localStorage.setItem('exams', JSON.stringify(this.exams));
+                        localStorage.setItem('schedules', JSON.stringify(this.schedules));
+                        localStorage.setItem('activities', JSON.stringify(this.activities));
+                        
+                        this.addActivity('Imported school data');
+                        this.loadDashboardData();
+                        alert('Data imported successfully!');
+                    }
+                } catch (error) {
+                    alert('Error importing data. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    createBackup() {
+        const backup = {
+            data: {
+                students: this.students,
+                teachers: this.teachers,
+                staff: this.staff,
+                admissions: this.admissions,
+                attendance: this.attendance,
+                exams: this.exams,
+                schedules: this.schedules,
+                activities: this.activities
+            },
+            settings: this.settings,
+            timestamp: new Date().toISOString(),
+            version: '1.0.0'
+        };
+
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `school-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.addActivity('Created system backup');
+        alert('Backup created successfully!');
+    }
+
+    clearAllData() {
+        if (confirm('This will delete ALL data including students, teachers, attendance, etc. This action cannot be undone. Are you sure?')) {
+            if (confirm('Are you absolutely sure? This will permanently delete all school data.')) {
+                this.students = [];
+                this.teachers = [];
+                this.staff = [];
+                this.admissions = [];
+                this.attendance = {};
+                this.exams = [];
+                this.schedules = {};
+                this.activities = [];
+                
+                // Clear localStorage
+                localStorage.removeItem('students');
+                localStorage.removeItem('teachers');
+                localStorage.removeItem('staff');
+                localStorage.removeItem('admissions');
+                localStorage.removeItem('attendance');
+                localStorage.removeItem('exams');
+                localStorage.removeItem('schedules');
+                localStorage.removeItem('activities');
+                
+                this.addActivity('Cleared all system data');
+                this.loadDashboardData();
+                alert('All data has been cleared.');
+            }
+        }
+    }
+
+    generateSystemReport() {
+        const report = {
+            summary: {
+                totalStudents: this.students.length,
+                totalTeachers: this.teachers.length,
+                totalStaff: this.staff.length,
+                totalAdmissions: this.admissions.length,
+                activitiesCount: this.activities.length
+            },
+            classDistribution: {},
+            attendanceStats: {},
+            systemInfo: {
+                browser: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screenResolution: `${screen.width}x${screen.height}`,
+                localStorage: this.isLocalStorageAvailable(),
+                timestamp: new Date().toISOString()
+            }
+        };
+
+        // Calculate class distribution
+        this.students.forEach(student => {
+            report.classDistribution[student.class] = (report.classDistribution[student.class] || 0) + 1;
+        });
+
+        // Calculate attendance statistics
+        let totalPresent = 0;
+        let totalAbsent = 0;
+        Object.values(this.attendance).forEach(day => {
+            Object.values(day).forEach(status => {
+                if (status === 'present') totalPresent++;
+                else if (status === 'absent') totalAbsent++;
+            });
+        });
+        report.attendanceStats = { totalPresent, totalAbsent };
+
+        // Create and download report
+        const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `system-report-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('System report generated and downloaded!');
+    }
+
+    updateDataCounts() {
+        document.getElementById('dataStudentsCount').textContent = this.students.length;
+        document.getElementById('dataTeachersCount').textContent = this.teachers.length;
+        document.getElementById('dataStaffCount').textContent = this.staff.length;
+        document.getElementById('dataAdmissionsCount').textContent = this.admissions.length;
+        document.getElementById('storageUsed').textContent = this.calculateStorageSize();
+    }
+
+    updateSystemInfo() {
+        // Browser info
+        const userAgent = navigator.userAgent;
+        let browser = 'Unknown';
+        if (userAgent.includes('Chrome')) browser = 'Chrome';
+        else if (userAgent.includes('Firefox')) browser = 'Firefox';
+        else if (userAgent.includes('Safari')) browser = 'Safari';
+        else if (userAgent.includes('Edge')) browser = 'Edge';
+        document.getElementById('browserInfo').textContent = browser;
+
+        // OS info
+        let os = 'Unknown';
+        if (userAgent.includes('Windows')) os = 'Windows';
+        else if (userAgent.includes('Mac')) os = 'macOS';
+        else if (userAgent.includes('Linux')) os = 'Linux';
+        else if (userAgent.includes('Android')) os = 'Android';
+        else if (userAgent.includes('iOS')) os = 'iOS';
+        document.getElementById('osInfo').textContent = os;
+
+        // Screen resolution
+        document.getElementById('screenResolution').textContent = `${screen.width}x${screen.height}`;
+
+        // Local storage status
+        document.getElementById('localStorageStatus').textContent = this.isLocalStorageAvailable() ? 'Enabled' : 'Disabled';
+        document.getElementById('localStorageStatus').className = this.isLocalStorageAvailable() ? 'status-enabled' : 'status-disabled';
+
+        // Last updated
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleDateString();
+    }
+
+    calculateStorageSize() {
+        const total = JSON.stringify({
+            students: this.students,
+            teachers: this.teachers,
+            staff: this.staff,
+            admissions: this.admissions,
+            attendance: this.attendance,
+            exams: this.exams,
+            schedules: this.schedules,
+            activities: this.activities,
+            settings: this.settings
+        }).length;
+        
+        if (total < 1024) return `${total} B`;
+        else if (total < 1024 * 1024) return `${(total / 1024).toFixed(1)} KB`;
+        else return `${(total / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    isLocalStorageAvailable() {
+        try {
+            const test = '__localStorage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     // Utility Methods
     populateClassFilters() {
         const classes = [...new Set(this.students.map(s => s.class))];
@@ -563,6 +937,27 @@ function filterTeachers() {
 
 function filterStaff() {
     schoolSystem.filterStaff();
+}
+
+// Settings global functions
+function exportData() {
+    schoolSystem.exportData();
+}
+
+function importData() {
+    schoolSystem.importData();
+}
+
+function createBackup() {
+    schoolSystem.createBackup();
+}
+
+function clearAllData() {
+    schoolSystem.clearAllData();
+}
+
+function generateSystemReport() {
+    schoolSystem.generateSystemReport();
 }
 
 // Initialize the system when page loads
