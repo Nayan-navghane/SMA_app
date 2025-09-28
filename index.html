@@ -17,58 +17,69 @@
         </script>
 
         <nav class="sidebar">
-            <a href="#" class="nav-brand">School Management System</a>
             <ul class="nav-menu">
-                <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="#" class="nav-link" data-section="students"><i class="fas fa-users"></i> Students</a></li>
                 <li><a href="#" class="nav-link" data-section="teachers"><i class="fas fa-chalkboard-teacher"></i> Teachers</a></li>
-                <li><a href="#" class="nav-link" data-section="staff"><i class="fas fa-user-tie"></i> Staff</a></li>
-                <li><a href="#" class="nav-link" data-section="admissions"><i class="fas fa-door-open"></i> Admissions</a></li>
+                <li><a href="#" class="nav-link" data-section="fees"><i class="fas fa-money-bill-wave"></i> Fees</a></li>
                 <li><a href="#" class="nav-link" data-section="attendance"><i class="fas fa-calendar-check"></i> Attendance</a></li>
-                <li><a href="#" class="nav-link" data-section="schedule"><i class="fas fa-calendar-alt"></i> Schedule</a></li>
                 <li><a href="#" class="nav-link" data-section="exams"><i class="fas fa-clipboard-list"></i> Exams</a></li>
-                <li><a href="#" class="nav-link" data-section="fees"><i class="fas fa-money-bill"></i> Fees</a></li>
-                <li><a href="#" class="nav-link" data-section="salary"><i class="fas fa-dollar-sign"></i> Salary</a></li>
                 <li><a href="#" class="nav-link" data-section="reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
-                <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Settings</a></li>
-                <li><a href="#" onclick="schoolSystem.logout(); return false;"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>
 
-        <main class="main-content">
-            <!-- Dashboard Section -->
-            <div id="dashboard" class="section active">
-                <h2>Dashboard</h2>
-                <div class="dashboard-stats">
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="stat-number" id="totalStudents">0</div>
-                        <div class="stat-label">Total Students</div>
+        <div class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 class="school-title">School Management</h1>
+                    <h2 class="page-title">Dashboard</h2>
+                </div>
+                <div class="header-right">
+                    <div class="user-profile">
+                        <i class="fas fa-user"></i>
+                        <span>John Doe</span>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
-                        <div class="stat-number" id="totalTeachers">0</div>
-                        <div class="stat-label">Total Teachers</div>
+                    <a href="#" class="logout-btn" onclick="schoolSystem.logout(); return false;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <div id="dashboard" class="section active">
+                    <div class="dashboard-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-number" id="totalStudents">0</div>
+                            <div class="stat-label">Total Students</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                            <div class="stat-number" id="totalTeachers">0</div>
+                            <div class="stat-label">Total Teachers</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+                            <div class="stat-number" id="pendingAdmissions">0</div>
+                            <div class="stat-label">Pending Admissions</div>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-door-open"></i></div>
-                        <div class="stat-number" id="pendingAdmissions">0</div>
-                        <div class="stat-label">Pending Admissions</div>
+                    <div class="content-grid">
+                        <div class="recent-activities">
+                            <h3>Recent Activities</h3>
+                            <ul class="activity-list" id="recentActivities">
+                                <li class="activity-item">No recent activities</li>
+                            </ul>
+                        </div>
+                        <div class="quick-actions">
+                            <h3>Quick Actions</h3>
+                            <button class="btn btn-primary">New Admission</button>
+                            <button class="btn btn-secondary">Add Student</button>
+                            <button class="btn btn-success">Mark Attendance</button>
+                        </div>
                     </div>
                 </div>
-                <div class="recent-activities">
-                    <h3>Recent Activities</h3>
-                    <ul class="activity-list" id="recentActivities">
-                        <li class="activity-item"><span class="activity-time">Just now</span> - Welcome to the School Management System</li>
-                    </ul>
-                </div>
-                <div class="quick-actions">
-                    <h3>Quick Actions</h3>
-                    <button class="btn btn-primary">New Admission</button>
-                    <button class="btn btn-secondary">Add Student</button>
-                    <button class="btn btn-success">Mark Attendance</button>
-                </div>
-            </div>
 
             <!-- Students Section -->
             <div id="students" class="section">
