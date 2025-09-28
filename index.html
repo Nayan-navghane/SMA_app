@@ -129,6 +129,9 @@
                     <button class="btn btn-primary" onclick="showAddStudentForm()">
                         <i class="fas fa-plus"></i> Add Student
                     </button>
+                    <select id="studentSelect" onchange="updateSelectedStudent()">
+                        <option value="">Select Student</option>
+                    </select>
                     <input type="file" id="studentPhoto" accept="image/*" style="margin: 10px 0;">
                     <button class="btn btn-success" onclick="generateIDCard()">
                         <i class="fas fa-id-card"></i> Generate ID Card
