@@ -17,6 +17,7 @@ class SchoolManagementSystem {
         this.feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
         this.feeStructures = JSON.parse(localStorage.getItem('feeStructures')) || [];
         this.extraExpenses = JSON.parse(localStorage.getItem('extraExpenses')) || [];
+        this.salaries = JSON.parse(localStorage.getItem('salaries')) || [];
         
         this.init();
     }
@@ -114,6 +115,14 @@ class SchoolManagementSystem {
         const extraExpenseForm = document.getElementById('extraExpenseForm');
         if (extraExpenseForm) extraExpenseForm.addEventListener('submit', (e) => this.handleExtraExpenseSubmit(e));
 
+        // Salary form
+        const salaryForm = document.getElementById('salaryForm');
+        if (salaryForm) salaryForm.addEventListener('submit', (e) => this.handleSalarySubmit(e));
+
+        // Excel upload
+        const excelUpload = document.getElementById('excelUpload');
+        if (excelUpload) excelUpload.addEventListener('change', (e) => this.uploadSalaryExcel(e));
+
         // Theme toggle
         const themeSelect = document.getElementById('theme');
         if (themeSelect) themeSelect.addEventListener('change', (e) => {
@@ -130,6 +139,8 @@ class SchoolManagementSystem {
         if (teacherSearch) teacherSearch.addEventListener('input', () => this.filterTeachers());
         const staffSearch = document.getElementById('staffSearch');
         if (staffSearch) staffSearch.addEventListener('input', () => this.filterStaff());
+        const salarySearch = document.getElementById('salarySearch');
+        if (salarySearch) salarySearch.addEventListener('input', () => this.filterSalaries());
     }
 
     showSection(sectionName) {
@@ -540,6 +551,218 @@ class SchoolManagementSystem {
         this.loadTeachers();
     }
 
+    // Salary Management Methods
+    loadSalaries() {
+        const salariesList = document.getElementById('salariesList');
+        if (!salariesList) return;
+
+        // Populate teacher select
+        const teacherSelect = document.getElementById('teacherSelect');
+        if (teacherSelect) {
+            teacherSelect.innerHTML = '<option value="">Select Teacher</option>' + 
+                this.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        }
+
+        const searchTerm = document.getElementById('salarySearch');
+        let filteredSalaries = this.salaries;
+
+        if (searchTerm && searchTerm.value) {
+            const term = searchTerm.value.toLowerCase();
+            filteredSalaries = filteredSalaries.filter(s => 
+                s.teacherName.toLowerCase().includes(term) || 
+                s.designation.toLowerCase().includes(term)
+            );
+        }
+
+        if (filteredSalaries.length === 0) {
+            salariesList.innerHTML = '<p>No salary records found. Add your first salary record!</p>';
+            return;
+        }
+
+        salariesList.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Teacher Name</th>
+                        <th>Designation</th>
+                        <th>Basic Salary</th>
+                        <th>Allowances</th>
+                        <th>Deductions</th>
+                        <th>Net Salary</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredSalaries.map(salary => `
+                        <tr>
+                            <td>${salary.teacherName}</td>
+                            <td>${salary.designation}</td>
+                            <td>₹${salary.basicSalary}</td>
+                            <td>₹${salary.allowances}</td>
+                            <td>₹${salary.deductions}</td>
+                            <td>₹${salary.netSalary}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="schoolSystem.editSalary(${salary.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteSalary(${salary.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    showAddSalaryForm() {
+        const salaryFormContainer = document.getElementById('salaryFormContainer');
+        if (salaryFormContainer) salaryFormContainer.style.display = 'block';
+
+        const salaryId = document.getElementById('salaryId');
+        if (salaryId) salaryId.value = '';
+
+        const salaryForm = document.getElementById('salaryForm');
+        if (salaryForm) salaryForm.reset();
+
+        // Populate teacher select if not already populated
+        this.loadSalaries(); // This will populate the select
+    }
+
+    editSalary(salaryId) {
+        const salary = this.salaries.find(s => s.id == salaryId);
+        if (!salary) return;
+
+        const salaryFormContainer = document.getElementById('salaryFormContainer');
+        if (salaryFormContainer) salaryFormContainer.style.display = 'block';
+
+        document.getElementById('salaryId').value = salary.id;
+        document.getElementById('teacherSelect').value = salary.teacherId;
+        document.getElementById('designation').value = salary.designation;
+        document.getElementById('basicSalary').value = salary.basicSalary;
+        document.getElementById('allowances').value = salary.allowances;
+        document.getElementById('deductions').value = salary.deductions;
+        document.getElementById('netSalary').value = salary.netSalary;
+
+        this.calculateNetSalary();
+    }
+
+    handleSalarySubmit(e) {
+        e.preventDefault();
+
+        const salaryData = {
+            id: document.getElementById('salaryId').value || Date.now(),
+            teacherId: document.getElementById('teacherSelect').value,
+            teacherName: document.getElementById('teacherSelect').options[document.getElementById('teacherSelect').selectedIndex].text,
+            designation: document.getElementById('designation').value,
+            basicSalary: parseFloat(document.getElementById('basicSalary').value),
+            allowances: parseFloat(document.getElementById('allowances').value),
+            deductions: parseFloat(document.getElementById('deductions').value),
+            netSalary: parseFloat(document.getElementById('netSalary').value),
+            updatedAt: new Date().toISOString()
+        };
+
+        // Validate required fields
+        if (!salaryData.teacherId || !salaryData.designation || !salaryData.basicSalary || !salaryData.allowances || !salaryData.deductions) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const existingIndex = this.salaries.findIndex(s => s.id == salaryData.id);
+        if (existingIndex >= 0) {
+            this.salaries[existingIndex] = salaryData;
+            this.addActivity(`Updated salary for ${salaryData.teacherName}`);
+        } else {
+            this.salaries.push(salaryData);
+            this.addActivity(`Added salary for ${salaryData.teacherName}`);
+        }
+
+        localStorage.setItem('salaries', JSON.stringify(this.salaries));
+        this.closeSalaryForm();
+        this.loadSalaries();
+    }
+
+    deleteSalary(salaryId) {
+        if (confirm('Are you sure you want to delete this salary record?')) {
+            const salary = this.salaries.find(s => s.id == salaryId);
+            this.salaries = this.salaries.filter(s => s.id != salaryId);
+            localStorage.setItem('salaries', JSON.stringify(this.salaries));
+            this.addActivity(`Deleted salary for ${salary.teacherName}`);
+            this.loadSalaries();
+        }
+    }
+
+    filterSalaries() {
+        this.loadSalaries();
+    }
+
+    closeSalaryForm() {
+        const salaryFormContainer = document.getElementById('salaryFormContainer');
+        if (salaryFormContainer) salaryFormContainer.style.display = 'none';
+    }
+
+    calculateNetSalary() {
+        const basic = parseFloat(document.getElementById('basicSalary').value) || 0;
+        const allowances = parseFloat(document.getElementById('allowances').value) || 0;
+        const deductions = parseFloat(document.getElementById('deductions').value) || 0;
+        const net = basic + allowances - deductions;
+        document.getElementById('netSalary').value = net;
+    }
+
+    uploadSalaryExcel(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+            jsonData.forEach(row => {
+                const teacher = this.teachers.find(t => t.name === row['Teacher Name']);
+                if (teacher) {
+                    const salaryData = {
+                        id: Date.now() + Math.random(),
+                        teacherId: teacher.id,
+                        teacherName: teacher.name,
+                        designation: row['Designation'] || '',
+                        basicSalary: parseFloat(row['Basic Salary']) || 0,
+                        allowances: parseFloat(row['Allowances']) || 0,
+                        deductions: parseFloat(row['Deductions']) || 0,
+                        netSalary: (parseFloat(row['Basic Salary']) || 0) + (parseFloat(row['Allowances']) || 0) - (parseFloat(row['Deductions']) || 0),
+                        updatedAt: new Date().toISOString()
+                    };
+                    this.salaries.push(salaryData);
+                }
+            });
+
+            localStorage.setItem('salaries', JSON.stringify(this.salaries));
+            this.addActivity(`Uploaded ${jsonData.length} salary records from Excel`);
+            this.loadSalaries();
+            e.target.value = ''; // Reset file input
+            alert('Salary data uploaded successfully!');
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    downloadSalaryExcel() {
+        const ws = XLSX.utils.json_to_sheet(this.salaries.map(s => ({
+            'Teacher Name': s.teacherName,
+            'Designation': s.designation,
+            'Basic Salary': s.basicSalary,
+            'Allowances': s.allowances,
+            'Deductions': s.deductions,
+            'Net Salary': s.netSalary
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Salaries');
+        XLSX.writeFile(wb, 'teacher_salaries.xlsx');
+        this.addActivity('Downloaded salary data to Excel');
+    }
+
     // Settings Management
     loadSettings() {
         const schoolName = document.getElementById('schoolName');
@@ -871,127 +1094,6 @@ class SchoolManagementSystem {
         }
     }
 
-    // Salary Management
-    loadSalaries() {
-        const salariesList = document.getElementById('salariesList');
-        if (!salariesList) return;
-
-        // Populate teacher select
-        const teacherSelect = document.getElementById('teacherSelect');
-        if (teacherSelect) {
-            teacherSelect.innerHTML = '<option value="">Select Teacher</option>' + 
-                this.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-        }
-
-        const searchTerm = document.getElementById('salarySearch');
-        let filteredSalaries = this.salaries;
-
-        if (searchTerm && searchTerm.value) {
-            const term = searchTerm.value.toLowerCase();
-            filteredSalaries = filteredSalaries.filter(s => 
-                s.teacherName.toLowerCase().includes(term) || 
-                s.designation.toLowerCase().includes(term)
-            );
-        }
-
-        if (filteredSalaries.length === 0) {
-            salariesList.innerHTML = '<p>No salary records found. Add your first salary record!</p>';
-            return;
-        }
-
-        salariesList.innerHTML = `
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Teacher Name</th>
-                        <th>Designation</th>
-                        <th>Basic Salary</th>
-                        <th>Allowances</th>
-                        <th>Deductions</th>
-                        <th>Net Salary</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filteredSalaries.map(salary => `
-                        <tr>
-                            <td>${salary.teacherName}</td>
-                            <td>${salary.designation}</td>
-                            <td>₹${salary.basicSalary}</td>
-                            <td>₹${salary.allowances}</td>
-                            <td>₹${salary.deductions}</td>
-                            <td>₹${salary.netSalary}</td>
-                            <td>
-                                <button class="btn btn-sm btn-primary" onclick="schoolSystem.editSalary(${salary.id})">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteSalary(${salary.id})">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-    }
-
-    // Salary Management
-    loadSalaries() {
-        const salariesList = document.getElementById('salariesList');
-        if (!salariesList) return;
-
-        // Populate teacher select
-        const teacherSelect = document.getElementById('teacherSelect');
-        if (teacherSelect) {
-            teacherSelect.innerHTML = '<option value="">Select Teacher</option>' + 
-                this.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-        }
-
-        const searchTerm = document.getElementById('salarySearch');
-        let filteredSalaries = this.salaries;
-
-        if (searchTerm && searchTerm.value) {
-            const term = searchTerm.value.toLowerCase();
-            filteredSalaries = filteredSalaries.filter(s => 
-                s.teacherName.toLowerCase().includes(term) || 
-                s.designation.toLowerCase().includes(term)
-            );
-        }
-
-        if (filteredSalaries.length === 0) {
-            salariesList.innerHTML = '<p>No salary records found. Add your first salary record!</p>';
-            return;
-        }
-
-        salariesList.innerHTML = `
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Teacher Name</th>
-                        <th>Designation</th>
-                        <th>Basic Salary</th>
-                        <th>Allowances</th>
-                        <th>Deductions</th>
-                        <th>Net Salary</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filteredSalaries.map(salary => `
-                        <tr>
-                            <td>${salary.teacherName}</td>
-                            <td>${salary.designation}</td>
-                            <td>₹${salary.basicSalary}</td>
-                            <td>₹${salary.allowances}</td>
-                            <td>₹${salary.deductions}</td>
-                            <td>₹${salary.netSalary}</td>
-                            <td>
-                                <button class="btn btn-sm btn-primary" onclick="schoolSystem.editSalary(${salary.id})">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="school
-
     // Utility Methods
     formatDate(dateString) {
         const date = new Date(dateString);
@@ -1070,273 +1172,4 @@ function openPrintWindow(src, stu) {
             <style>
                 body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: white; }
                 .id-card { width: 350px; height: 220px; border: 2px solid #333; padding: 20px; margin: 0 auto; background: #f8f9fa; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; }
-                .photo-section { width: 100px; height: 80px; margin: 0 auto 10px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
-                .photo-section img { width: 100%; height: 100%; object-fit: cover; }
-                .school-name { font-size: 14px; color: #666; margin-bottom: 5px; }
-                .student-name { font-size: 18px; font-weight: bold; margin: 5px 0; }
-                .student-details { font-size: 12px; margin: 2px 0; }
-                .roll-no { font-size: 14px; color: #2193b0; font-weight: bold; }
-                .validity { font-size: 10px; color: #666; margin-top: 5px; }
-            </style>
-        </head>
-        <body>
-            <div class="id-card">
-                <div class="photo-section">
-                    <img src="${src}" alt="Student Photo">
-                </div>
-                <div class="school-name">School Management System</div>
-                <div class="student-name">${stu.name}</div>
-                <div class="student-details">Class: ${stu.class}</div>
-                <div class="roll-no">Roll No: ${stu.rollNo}</div>
-                <div class="student-details">DOB: ${new Date(stu.dateOfBirth).toLocaleDateString()}</div>
-                <div class="student-details">Parent: ${stu.parentName}</div>
-                <div class="validity">Valid until end of academic year</div>
-            </div>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            </script>
-        </body>
-        </html>
-    `;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(idCardContent);
-    printWindow.document.close();
-}
-
-// Global functions for HTML onclick handlers
-function showFeeTab(tabName) {
-    schoolSystem.showFeeTab(tabName);
-}
-
-function showAddExtraExpenseForm() {
-    schoolSystem.showAddExtraExpenseForm();
-}
-
-function exportExtraExpenses() {
-    schoolSystem.exportExtraExpenses();
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function showPaperCreator() {
-    document.getElementById('paperCreatorModal').style.display = 'block';
-}
-
-function showExamTab(tabName) {
-    // Hide all exam tab contents
-    document.querySelectorAll('.exam-tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-
-    // Remove active class from all exam tab buttons
-    document.querySelectorAll('.exam-tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    // Show selected tab content
-    const tabElement = document.getElementById(tabName + 'Tab');
-    if (tabElement) {
-        tabElement.classList.add('active');
-    }
-    
-    // Add active class to tab button
-    const tabBtn = document.querySelector(`[onclick="showExamTab('${tabName}')"]`);
-    if (tabBtn) {
-        tabBtn.classList.add('active');
-    }
-
-    // Load tab-specific data
-    switch(tabName) {
-        case 'papers':
-            schoolSystem.loadPapers();
-            break;
-        case 'exams':
-            schoolSystem.loadExamSchedules();
-            break;
-        case 'results':
-            schoolSystem.loadExamResults();
-            break;
-    }
-}
-
-function showCreateExamForm() {
-    // Placeholder for exam creation form
-    alert('Exam creation form coming soon!');
-}
-
-function loadPapers() {
-    const papersList = document.getElementById('papersList');
-    if (papersList) {
-        papersList.innerHTML = '<p>No question papers created yet. Create your first paper!</p>';
-    }
-}
-
-function loadExamSchedules() {
-    const examsList = document.getElementById('examsList');
-    if (examsList) {
-        examsList.innerHTML = '<p>No exams scheduled yet</p>';
-    }
-}
-
-function loadExamResults() {
-    const resultsList = document.getElementById('resultsList');
-    if (resultsList) {
-        resultsList.innerHTML = '<p>Select class and subject to view results</p>';
-    }
-}
-
-function generateReportCards() {
-    alert('Report cards generation coming soon!');
-}
-
-function formatText(command, value = null) {
-    const editor = document.getElementById('paperEditor');
-    if (editor) {
-        document.execCommand(command, false, value);
-        editor.focus();
-    }
-}
-
-function addQuestion() {
-    const editor = document.getElementById('paperEditor');
-    if (editor) {
-        const questionTemplate = `
-            <div class="question-template">
-                <div class="question-number">Q. [Number]</div>
-                <div class="question-text">[Question text here]</div>
-                <ul class="options-list">
-                    <li><span class="option-letter">A.</span> [Option A]</li>
-                    <li><span class="option-letter">B.</span> [Option B]</li>
-                    <li><span class="option-letter">C.</span> [Option C]</li>
-                    <li><span class="option-letter">D.</span> [Option D]</li>
-                </ul>
-                <div class="correct-answer">Correct Answer: [A/B/C/D]</div>
-            </div>
-        `;
-        editor.insertAdjacentHTML('beforeend', questionTemplate);
-        editor.focus();
-    }
-}
-
-function insertTable() {
-    const editor = document.getElementById('paperEditor');
-    if (editor) {
-        const tableTemplate = `
-            <table border="1" style="border-collapse: collapse; width: 100%;">
-                <thead>
-                    <tr>
-                        <th style="padding: 8px; text-align: left;">Header 1</th>
-                        <th style="padding: 8px; text-align: left;">Header 2</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 8px;">Row 1, Cell 1</td>
-                        <td style="padding: 8px;">Row 1, Cell 2</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px;">Row 2, Cell 1</td>
-                        <td style="padding: 8px;">Row 2, Cell 2</td>
-                    </tr>
-                </tbody>
-            </table>
-        `;
-        editor.insertAdjacentHTML('beforeend', tableTemplate);
-        editor.focus();
-    }
-}
-
-function previewPaper() {
-    const editor = document.getElementById('paperEditor');
-    if (editor) {
-        const previewWindow = window.open('', '_blank');
-        const previewContent = `
-            <html>
-            <head>
-                <title>Paper Preview</title>
-                <style>
-                    body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; font-size: 14px; }
-                    .question-template { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-                    .question-number { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
-                    .options-list { margin: 10px 0; padding-left: 20px; }
-                    .correct-answer { color: green; font-weight: bold; margin-top: 10px; }
-                </style>
-            </head>
-            <body>
-                ${editor.innerHTML}
-            </body>
-            </html>
-        `;
-        previewWindow.document.write(previewContent);
-        previewWindow.document.close();
-    }
-}
-
-function savePaper() {
-    const paperData = {
-        id: Date.now(),
-        title: document.getElementById('paperTitle').value,
-        subject: document.getElementById('paperSubject').value,
-        class: document.getElementById('paperClass').value,
-        duration: document.getElementById('paperDuration').value,
-        totalMarks: document.getElementById('paperTotalMarks').value,
-        instructions: document.getElementById('paperInstructions').value,
-        content: document.getElementById('paperEditor').innerHTML,
-        createdAt: new Date().toISOString()
-    };
-
-    if (!paperData.title || !paperData.subject || !paperData.class) {
-        alert('Please fill in all required fields');
-        return;
-    }
-
-    schoolSystem.questionPapers.push(paperData);
-    localStorage.setItem('questionPapers', JSON.stringify(schoolSystem.questionPapers));
-    alert('Paper saved successfully!');
-    closeModal('paperCreatorModal');
-    schoolSystem.loadPapers();
-}
-
-function generatePDF() {
-    alert('PDF generation coming soon! Paper content will be saved.');
-    savePaper();
-}
-
-function printPaper() {
-    const editor = document.getElementById('paperEditor');
-    if (editor) {
-        const printWindow = window.open('', '_blank');
-        const printContent = `
-            <html>
-            <head>
-                <title>Print Paper</title>
-                <style>
-                    body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; font-size: 14px; }
-                    @media print { body { margin: 0; } }
-                </style>
-            </head>
-            <body>
-                <h1>${document.getElementById('paperTitle').value}</h1>
-                <p><strong>Subject:</strong> ${document.getElementById('paperSubject').value}</p>
-                <p><strong>Class:</strong> ${document.getElementById('paperClass').value}</p>
-                <p><strong>Duration:</strong> ${document.getElementById('paperDuration').value} minutes</p>
-                <p><strong>Total Marks:</strong> ${document.getElementById('paperTotalMarks').value}</p>
-                ${document.getElementById('paperInstructions').value ? `<p><strong>Instructions:</strong> ${document.getElementById('paperInstructions').value}</p>` : ''}
-                <hr>
-                ${editor.innerHTML}
-            </body>
-            </html>
-        `;
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.onload = () => {
-            printWindow.print();
-            printWindow.close();
-        };
-    }
-}
+                .photo-section { width: 100px; height: 80px; margin: 0 auto 10px; border: 1px solid #
