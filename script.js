@@ -16,6 +16,7 @@ class SchoolManagementSystem {
         this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
         this.feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
         this.feeStructures = JSON.parse(localStorage.getItem('feeStructures')) || [];
+        this.extraExpenses = JSON.parse(localStorage.getItem('extraExpenses')) || [];
         
         this.init();
     }
@@ -60,6 +61,7 @@ class SchoolManagementSystem {
         document.getElementById('studentSearch').addEventListener('input', () => this.filterStudents());
         document.getElementById('teacherSearch').addEventListener('input', () => this.filterTeachers());
         document.getElementById('staffSearch').addEventListener('input', () => this.filterStaff());
+        document.getElementById('extraExpenseForm').addEventListener('submit', (e) => this.handleExtraExpenseSubmit(e));
     }
 
     showSection(sectionName) {
@@ -105,6 +107,9 @@ class SchoolManagementSystem {
                 break;
             case 'settings':
                 this.loadSettings();
+                break;
+            case 'fees':
+                this.showFeeTab('collect');
                 break;
         }
     }
@@ -2168,6 +2173,139 @@ class SchoolManagementSystem {
         }
     }
 }
+
+    loadExtraExpenses() {
+        const extraExpensesList = document.getElementById('extraExpensesList');
+        if (this.extraExpenses.length === 0) {
+            extraExpensesList.innerHTML = '<p>No extra expenses added yet.</p>';
+            return;
+        }
+        extraExpensesList.innerHTML = this.extraExpenses.map(expense => `
+            <tr>
+                <td>${this.formatDate(expense.date)}</td>
+                <td>${expense.description}</td>
+                <td>₹${expense.amount}</td>
+                <td>${expense.category}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteExtraExpense(${expense.id})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    showAddExtraExpenseForm() {
+        document.getElementById('extraExpenseModal').style.display = 'block';
+    }
+
+    handleExtraExpenseSubmit(e) {
+        e.preventDefault();
+        const date = document.getElementById('expenseDate').value;
+        const description = document.getElementById('expenseDescription').value;
+        const amount = parseFloat(document.getElementById('expenseAmount').value);
+        const category = document.getElementById('expenseCategory').value;
+        if (!date || !description || !amount || !category) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        const expenseData = {
+            id: Date.now(),
+            date: date,
+            description: description,
+            amount: amount,
+            category: category
+        };
+        this.extraExpenses.push(expenseData);
+        localStorage.setItem('extraExpenses', JSON.stringify(this.extraExpenses));
+        document.getElementById('extraExpenseModal').style.display = 'none';
+        this.loadExtraExpenses();
+        this.addActivity(`Added extra expense: ${description}`);
+        // Reset form
+        document.getElementById('expenseDate').value = '';
+        document.getElementById('expenseDescription').value = '';
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('expenseCategory').value = '';
+    }
+
+    deleteExtraExpense(id) {
+        this.extraExpenses = this.extraExpenses.filter(e => e.id != id);
+        localStorage.setItem('extraExpenses', JSON.stringify(this.extraExpenses));
+        this.loadExtraExpenses();
+        this.addActivity('Deleted extra expense');
+    }
+
+loadExtraExpenses() {
+        const extraExpensesList = document.getElementById('extraExpensesList');
+        if (this.extraExpenses.length === 0) {
+            extraExpensesList.innerHTML = '<p>No extra expenses added yet.</p>';
+            return;
+        }
+        extraExpensesList.innerHTML = this.extraExpenses.map(expense => `
+            <tr>
+                <td>${this.formatDate(expense.date)}</td>
+                <td>${expense.description}</td>
+                <td>₹${expense.amount}</td>
+                <td>${expense.category}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteExtraExpense(${expense.id})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    showAddExtraExpenseForm() {
+        document.getElementById('extraExpenseModal').style.display = 'block';
+    }
+
+    handleExtraExpenseSubmit(e) {
+        e.preventDefault();
+        const date = document.getElementById('expenseDate').value;
+        const description = document.getElementById('expenseDescription').value;
+        const amount = parseFloat(document.getElementById('expenseAmount').value);
+        const category = document.getElementById('expenseCategory').value;
+        if (!date || !description || !amount || !category) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        const expenseData = {
+            id: Date.now(),
+            date: date,
+            description: description,
+            amount: amount,
+            category: category
+        };
+        this.extraExpenses.push(expenseData);
+        localStorage.setItem('extraExpenses', JSON.stringify(this.extraExpenses));
+        document.getElementById('extraExpenseModal').style.display = 'none';
+        this.loadExtraExpenses();
+        this.addActivity(`Added extra expense: ${description}`);
+        // Reset form
+        document.getElementById('expenseDate').value = '';
+        document.getElementById('expenseDescription').value = '';
+        document.getElementById('expenseAmount').value = '';
+        document.getElementById('expenseCategory').value = '';
+    }
+
+    deleteExtraExpense(id) {
+        this.extraExpenses = this.extraExpenses.filter(e => e.id != id);
+        localStorage.setItem('extraExpenses', JSON.stringify(this.extraExpenses));
+        this.loadExtraExpenses();
+        this.addActivity('Deleted extra expense');
+    }
+
+    exportExtraExpenses() {
+        const csvContent = "data:text/csv;charset=utf-8," + this.extraExpenses.map(e => `${e.date},${e.description},${e.amount},${e.category}`).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "extra_expenses.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 
 function checkAuth() {
     if (localStorage.getItem('loggedIn') !== 'true') {

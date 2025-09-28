@@ -422,7 +422,7 @@
             <section id="fees" class="section">
                 <div class="section-header">
                     <h2><i class="fas fa-rupee-sign"></i> Fee Management</h2>
-                    <div class="fee-tabs">
+<div class="fee-tabs">
                         <button type="button" class="tab-btn active" onclick="showFeeTab('collect')">
                             <i class="fas fa-plus-circle"></i> Collect Fee
                         </button>
@@ -434,6 +434,9 @@
                         </button>
                         <button type="button" class="tab-btn" onclick="showFeeTab('reports')">
                             <i class="fas fa-chart-bar"></i> Fee Reports
+                        </button>
+                        <button type="button" class="tab-btn" onclick="showFeeTab('extra')">
+                            <i class="fas fa-file-invoice"></i> Extra Expenses
                         </button>
                     </div>
                 </div>
@@ -624,6 +627,20 @@
                     <div id="feeReportsContainer" class="fee-reports-display">
                         <p>Select a report type to generate</p>
                     </div>
+                </div>
+                <div id="extraTab" class="fee-tab-content">
+                    <div class="extra-expenses-header">
+                        <h3>Extra Expenses</h3>
+                        <button class="btn btn-primary" onclick="showAddExtraExpenseForm()">
+                            <i class="fas fa-plus"></i> Add Extra Expense
+                        </button>
+                    </div>
+                    <div id="extraExpensesList" class="data-table">
+                        <p>No extra expenses added yet.</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="exportExtraExpenses()">
+                        <i class="fas fa-download"></i> Export to CSV
+                    </button>
                 </div>
             </section>
 
@@ -1175,6 +1192,49 @@
                         <i class="fas fa-save"></i> Save
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('studentModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="extraExpenseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('extraExpenseModal')">&times;</span>
+            <h3>Add Extra Expense</h3>
+            <form id="extraExpenseForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expenseDate">Date</label>
+                        <input type="date" id="expenseDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseDescription">Description</label>
+                        <input type="text" id="expenseDescription" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expenseAmount">Amount</label>
+                        <input type="number" id="expenseAmount" required min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="expenseCategory">Category</label>
+                        <select id="expenseCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Supplies">Supplies</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Add Expense
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('extraExpenseModal')">
                         <i class="fas fa-times"></i> Cancel
                     </button>
                 </div>
