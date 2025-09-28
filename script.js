@@ -2180,9 +2180,10 @@ function logout() {
     window.location.href = 'login.html';
 }
 
-// Check auth on load
 document.addEventListener('DOMContentLoaded', function() {
-    checkAuth();
+    if (window.location.pathname !== '/login.html') {
+        checkAuth();
+    }
     schoolSystem = new SchoolManagementSystem();
     
     // Set current date for attendance
