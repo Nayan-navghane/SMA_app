@@ -5,23 +5,91 @@ class SchoolManagementSystem {
             return;
         }
 
-        this.students = JSON.parse(localStorage.getItem('students')) || [];
-        this.teachers = JSON.parse(localStorage.getItem('teachers')) || [];
-        this.salaries = JSON.parse(localStorage.getItem('salaries')) || [];
-        this.admissions = JSON.parse(localStorage.getItem('admissions')) || [];
-        this.staff = JSON.parse(localStorage.getItem('staff')) || [];
-        this.settings = JSON.parse(localStorage.getItem('settings')) || this.getDefaultSettings();
-        this.activities = JSON.parse(localStorage.getItem('activities')) || [];
-        this.attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-        this.exams = JSON.parse(localStorage.getItem('exams')) || [];
-        this.schedules = JSON.parse(localStorage.getItem('schedules')) || {};
-        this.feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
-        this.feeStructures = JSON.parse(localStorage.getItem('feeStructures')) || [];
-        this.extraExpenses = JSON.parse(localStorage.getItem('extraExpenses')) || [];
-        this.questionPapers = JSON.parse(localStorage.getItem('questionPapers')) || [];
-        this.examSchedules = JSON.parse(localStorage.getItem('examSchedules')) || [];
-        this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
-        this.recycleBin = JSON.parse(localStorage.getItem('recycleBin')) || [];
+        try {
+            this.students = JSON.parse(localStorage.getItem('students')) || [];
+        } catch (e) {
+            this.students = [];
+        }
+        try {
+            this.teachers = JSON.parse(localStorage.getItem('teachers')) || [];
+        } catch (e) {
+            this.teachers = [];
+        }
+        try {
+            this.salaries = JSON.parse(localStorage.getItem('salaries')) || [];
+        } catch (e) {
+            this.salaries = [];
+        }
+        try {
+            this.admissions = JSON.parse(localStorage.getItem('admissions')) || [];
+        } catch (e) {
+            this.admissions = [];
+        }
+        try {
+            this.staff = JSON.parse(localStorage.getItem('staff')) || [];
+        } catch (e) {
+            this.staff = [];
+        }
+        try {
+            this.settings = JSON.parse(localStorage.getItem('settings')) || this.getDefaultSettings();
+        } catch (e) {
+            this.settings = this.getDefaultSettings();
+        }
+        try {
+            this.activities = JSON.parse(localStorage.getItem('activities')) || [];
+        } catch (e) {
+            this.activities = [];
+        }
+        try {
+            this.attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+        } catch (e) {
+            this.attendance = {};
+        }
+        try {
+            this.exams = JSON.parse(localStorage.getItem('exams')) || [];
+        } catch (e) {
+            this.exams = [];
+        }
+        try {
+            this.schedules = JSON.parse(localStorage.getItem('schedules')) || {};
+        } catch (e) {
+            this.schedules = {};
+        }
+        try {
+            this.feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
+        } catch (e) {
+            this.feeRecords = [];
+        }
+        try {
+            this.feeStructures = JSON.parse(localStorage.getItem('feeStructures')) || [];
+        } catch (e) {
+            this.feeStructures = [];
+        }
+        try {
+            this.extraExpenses = JSON.parse(localStorage.getItem('extraExpenses')) || [];
+        } catch (e) {
+            this.extraExpenses = [];
+        }
+        try {
+            this.questionPapers = JSON.parse(localStorage.getItem('questionPapers')) || [];
+        } catch (e) {
+            this.questionPapers = [];
+        }
+        try {
+            this.examSchedules = JSON.parse(localStorage.getItem('examSchedules')) || [];
+        } catch (e) {
+            this.examSchedules = [];
+        }
+        try {
+            this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
+        } catch (e) {
+            this.examResults = [];
+        }
+        try {
+            this.recycleBin = JSON.parse(localStorage.getItem('recycleBin')) || [];
+        } catch (e) {
+            this.recycleBin = [];
+        }
         this.init();
     }
 
