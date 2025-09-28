@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #f1f5f9;
+    background-color: #f8fafc;
     color: #334155;
     line-height: 1.6;
 }
@@ -19,18 +19,12 @@ body {
 
 /* Sidebar Navigation */
 .sidebar {
-    width: 72px;
-    background-color: #1e293b;
+    width: 250px;
+    background-color: #0f172a;
     color: white;
     display: flex;
     flex-direction: column;
-    align-items: center;
     padding: 20px 0;
-    transition: width 0.3s ease;
-}
-
-.sidebar:hover {
-    width: 250px;
 }
 
 .nav-menu {
@@ -38,27 +32,31 @@ body {
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0;
     width: 100%;
 }
 
 .nav-link {
     color: #94a3b8;
     text-decoration: none;
-    padding: 12px 16px;
+    padding: 16px 20px;
     transition: all 0.3s ease;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 12px;
-    border-radius: 0 12px 12px 0;
     width: 100%;
     position: relative;
 }
 
-.nav-link:hover, .nav-link.active {
-    background-color: #334155;
+.nav-link:hover {
+    background-color: #1e293b;
     color: #e2e8f0;
+}
+
+.nav-link.active {
+    background-color: #0d6efd;
+    color: white;
 }
 
 .nav-link i {
@@ -69,13 +67,8 @@ body {
 }
 
 .nav-link span {
-    opacity: 0;
-    transition: opacity 0.3s ease;
     white-space: nowrap;
-}
-
-.sidebar:hover .nav-link span {
-    opacity: 1;
+    font-weight: 500;
 }
 
 /* Main Wrapper */
@@ -89,7 +82,7 @@ body {
 /* Top Header */
 .top-header {
     background-color: white;
-    padding: 16px 24px;
+    padding: 20px 32px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -104,13 +97,13 @@ body {
 }
 
 .school-title {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 500;
     color: #1e293b;
 }
 
 .page-title {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 700;
     color: #1e293b;
 }
@@ -155,8 +148,8 @@ body {
 /* Main Content */
 .main-content {
     flex: 1;
-    padding: 24px;
-    background-color: #f1f5f9;
+    padding: 32px;
+    background-color: #ffffff;
     overflow-y: auto;
 }
 
@@ -283,13 +276,26 @@ body {
 }
 
 /* Forms and Other Sections */
-.form-container, .filters {
+.form-container {
     background: white;
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
     margin-bottom: 24px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.no-data {
+    text-align: center;
+    color: #6b7280;
+    font-size: 1rem;
+    padding: 40px 20px;
 }
 
 .form-row {
@@ -323,8 +329,8 @@ body {
 
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
 }
 
 .form-actions {
@@ -352,12 +358,12 @@ body {
 }
 
 .btn-primary {
-    background-color: #3b82f6;
+    background-color: #0d6efd;
     color: white;
 }
 
 .btn-primary:hover {
-    background-color: #2563eb;
+    background-color: #0b5ed7;
 }
 
 .btn-secondary {
@@ -422,26 +428,36 @@ body {
 
 /* Filters */
 .filters {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     display: flex;
-    gap: 12px;
+    gap: 16px;
     align-items: center;
     flex-wrap: wrap;
 }
 
-.filters input, .filters select {
+.filters input {
+    flex: 1;
+    max-width: 400px;
     padding: 12px 16px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 1rem;
+    background-color: white;
+}
+
+.filters select {
     min-width: 200px;
+    padding: 12px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
     background-color: white;
 }
 
 .filters input:focus, .filters select:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
 }
 
 /* Modal */
@@ -515,6 +531,10 @@ body {
         width: 72px;
     }
 
+    .nav-link span {
+        display: none;
+    }
+
     .top-header {
         padding: 16px;
     }
@@ -537,7 +557,11 @@ body {
         align-items: stretch;
     }
 
-    .filters input, .filters select {
+    .filters input {
+        max-width: none;
+    }
+
+    .filters select {
         min-width: auto;
     }
 }
