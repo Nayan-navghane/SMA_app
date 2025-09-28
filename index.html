@@ -1,134 +1,348 @@
-const schoolSystem = new SchoolManagementSystem();
-
-class SchoolManagementSystem {
-    constructor() {
-        this.students = JSON.parse(localStorage.getItem('students')) || [];
-        this.teachers = JSON.parse(localStorage.getItem('teachers')) || [];
-        this.salaries = JSON.parse(localStorage.getItem('salaries')) || [];
-        this.admissions = JSON.parse(localStorage.getItem('admissions')) || [];
-        this.attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-        this.exams = JSON.parse(localStorage.getItem('exams')) || [];
-        this.schedules = JSON.parse(localStorage.getItem('schedules')) || {};
-        this.activities = JSON.parse(localStorage.getItem('activities')) || [];
-        this.settings = JSON.parse(localStorage.getItem('settings')) || this.getDefaultSettings();
-        this.staff = JSON.parse(localStorage.getItem('staff')) || [];
-        this.init();
-    }
-
-    getDefaultSettings() {
-        return {
-            schoolInfo: {
-                name: 'Government School',
-                code: 'GOVT001',
-                address: 'Government School Address',
-                phone: '123-456-7890',
-                email: 'govt.school@example.com',
-                website: 'govt.school.gov'
-            },
-            preferences: {
-                theme: 'light',
-                language: 'en',
-                timezone: 'Asia/Kolkata',
-                dateFormat: 'DD/MM/YYYY',
-                autoBackup: false,
-                notifications: true
-            },
-            security: {
-                sessionTimeout: false
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Check if logged in -->
+        <script>
+            if (localStorage.getItem('loggedIn') !== 'true') {
+                window.location.href = 'login.html';
             }
-        };
-    }
+        </script>
 
-    init() {
-        this.setupEventListeners();
-        this.loadDashboardData();
-        this.populateFilters();
-        this.setCurrentDate();
-    }
+        <nav class="navbar">
+            <a href="#" class="nav-brand">School Management System</a>
+            <ul class="nav-menu">
+                <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#" class="nav-link" data-section="students"><i class="fas fa-users"></i> Students</a></li>
+                <li><a href="#" class="nav-link" data-section="teachers"><i class="fas fa-chalkboard-teacher"></i> Teachers</a></li>
+                <li><a href="#" class="nav-link" data-section="staff"><i class="fas fa-user-tie"></i> Staff</a></li>
+                <li><a href="#" class="nav-link" data-section="admissions"><i class="fas fa-door-open"></i> Admissions</a></li>
+                <li><a href="#" class="nav-link" data-section="attendance"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                <li><a href="#" class="nav-link" data-section="schedule"><i class="fas fa-calendar-alt"></i> Schedule</a></li>
+                <li><a href="#" class="nav-link" data-section="exams"><i class="fas fa-clipboard-list"></i> Exams</a></li>
+                <li><a href="#" class="nav-link" data-section="fees"><i class="fas fa-money-bill"></i> Fees</a></li>
+                <li><a href="#" class="nav-link" data-section="salary"><i class="fas fa-dollar-sign"></i> Salary</a></li>
+                <li><a href="#" class="nav-link" data-section="reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="login.html" class="nav-link" onclick="localStorage.setItem('loggedIn', 'false');"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
 
-    setCurrentDate() {
-        const today = new Date().toISOString().split('T')[0];
-        const dateInputs = document.querySelectorAll('input[type="date"]');
-        dateInputs.forEach(input => {
-            if (!input.value) {
-                input.value = today;
-            }
-        });
-    }
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <h2>Dashboard</h2>
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                    <div class="stat-number" id="totalTeachers">0</div>
+                    <div class="stat-label">Total Teachers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+                    <div class="stat-number" id="totalAdmissions">0</div>
+                    <div class="stat-label">Admissions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-money-bill"></i></div>
+                    <div class="stat-number" id="totalFees">0</div>
+                    <div class="stat-label">Fees Collected</div>
+                </div>
+            </div>
+            <div class="recent-activities">
+                <h3>Recent Activities</h3>
+                <ul class="activity-list" id="recentActivities">
+                    <li class="activity-item"><span class="activity-time">Just now</span> - Welcome to the School Management System</li>
+                </ul>
+            </div>
+        </div>
 
-    populateFilters() {
-        // Populate class filters
-        const classes = [...new Set([...this.students, ...this.teachers].map(item => item.class || item.subject || '')).filter(cls => cls)].sort();
-        const classSelectors = document.querySelectorAll('select[id$="Class"]');
-        classSelectors.forEach(selector => {
-            selector.innerHTML = '<option value="">All Classes</option>' + classes.map(cls => `<option value="${cls}">${cls}</option>`).join('');
-        });
+        <!-- Students Section -->
+        <div id="students" class="section">
+            <h2>Students Management</h2>
+            <div class="filters">
+                <input type="text" id="studentSearch" placeholder="Search by name or roll no...">
+                <select id="classFilter">
+                    <option value="">All Classes</option>
+                </select>
+            </div>
+            <div class="form-container">
+                <form id="studentForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="rollNo">Roll No</label>
+                            <input type="text" id="rollNo" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentName">Name</label>
+                            <input type="text" id="studentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentClass">Class</label>
+                            <select id="studentClass" required>
+                                <option value="">Select Class</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="parentName">Parent Name</label>
+                            <input type="text" id="parentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contact">Contact</label>
+                            <input type="tel" id="contact" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Student</button>
+                        <button type="button" class="btn btn-secondary" onclick="schoolSystem.clearForm('studentForm')">Clear</button>
+                    </div>
+                </form>
+            </div>
+            <div id="studentsList">
+                <p>Loading students...</p>
+            </div>
+        </div>
 
-        // Populate subject filters
-        const subjects = [...new Set(this.teachers.map(t => t.subject))].sort();
-        const subjectSelectors = document.querySelectorAll('select[id$="Subject"]');
-        subjectSelectors.forEach(selector => {
-            selector.innerHTML = '<option value="">All Subjects</option>' + subjects.map(sub => `<option value="${sub}">${sub}</option>`).join('');
-        });
+        <!-- Teachers Section -->
+        <div id="teachers" class="section">
+            <h2>Teachers Management</h2>
+            <div class="filters">
+                <input type="text" id="teacherSearch" placeholder="Search by name or subject...">
+                <select id="subjectFilter">
+                    <option value="">All Subjects</option>
+                </select>
+            </div>
+            <div class="form-container">
+                <form id="teacherForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="teacherName">Name</label>
+                            <input type="text" id="teacherName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <select id="subject" required>
+                                <option value="">Select Subject</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="experience">Experience (years)</label>
+                            <input type="number" id="experience" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="teacherContact">Contact</label>
+                            <input type="tel" id="teacherContact" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="qualification">Qualification</label>
+                            <input type="text" id="qualification" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Teacher</button>
+                        <button type="button" class="btn btn-secondary" onclick="schoolSystem.clearForm('teacherForm')">Clear</button>
+                    </div>
+                </form>
+            </div>
+            <div id="teachersList">
+                <p>Loading teachers...</p>
+            </div>
+        </div>
 
-        // Populate department filters
-        const departments = [...new Set(this.staff.map(s => s.department))].sort();
-        const departmentSelectors = document.querySelectorAll('select[id$="Department"]');
-        departmentSelectors.forEach(selector => {
-            selector.innerHTML = '<option value="">All Departments</option>' + departments.map(dept => `<option value="${dept}">${dept}</option>`).join('');
-        });
+        <!-- Staff Section -->
+        <div id="staff" class="section">
+            <h2>Staff Management</h2>
+            <div class="filters">
+                <select id="departmentFilter">
+                    <option value="">All Departments</option>
+                </select>
+            </div>
+            <div id="staffList">
+                <p>Loading staff...</p>
+            </div>
+        </div>
 
-        // Populate status filters
-        const statusSelectors = document.querySelectorAll('select[id$="Status"]');
-        statusSelectors.forEach(selector => {
-            selector.innerHTML = '<option value="">All Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option>';
-        });
-    }
+        <!-- Admissions Section -->
+        <div id="admissions" class="section">
+            <h2>Admissions</h2>
+            <div class="filters">
+                <select id="admissionStatus">
+                    <option value="">All Status</option>
+                </select>
+            </div>
+            <div class="form-container">
+                <form id="admissionForm">
+                    <!-- Admission form fields -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Submit Admission</button>
+                    </div>
+                </form>
+            </div>
+            <div id="admissionsList">
+                <p>Loading admissions...</p>
+            </div>
+        </div>
 
-    setupEventListeners() {
-        // Navigation
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const section = e.currentTarget.getAttribute('data-section');
-                this.showSection(section);
-            });
-        });
+        <!-- Attendance Section -->
+        <div id="attendance" class="section">
+            <h2>Attendance</h2>
+            <div id="attendanceList">
+                <p>Loading attendance...</p>
+            </div>
+        </div>
 
-        // Forms
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const formId = form.id;
-                if (formId === 'studentForm') {
-                    this.handleStudentSubmit(e);
-                } else if (formId === 'teacherForm') {
-                    this.handleTeacherSubmit(e);
-                } else if (formId === 'salaryForm') {
-                    this.handleSalarySubmit(e);
-                } else if (formId === 'admissionForm') {
-                    this.handleAdmissionSubmit(e);
-                } else if (formId === 'schoolInfoForm') {
-                    this.saveSchoolInfo(e);
-                } else if (formId === 'systemPrefsForm') {
-                    this.saveSystemPreferences(e);
-                } else if (formId === 'securityForm') {
-                    this.saveSecuritySettings(e);
-                } else if (formId === 'extraExpenseForm') {
-                    this.handleExtraExpenseSubmit(e);
-                }
-            });
-        });
+        <!-- Schedule Section -->
+        <div id="schedule" class="section">
+            <h2>Class Schedule</h2>
+            <div id="scheduleList">
+                <p>Loading schedule...</p>
+            </div>
+        </div>
 
-        // Excel upload
-        const excelUpload = document.getElementById('excelUpload');
-        if (excelUpload) {
-            excelUpload.addEventListener('change', (e) => this.uploadSalaryExcel(e));
-        }
+        <!-- Exams Section -->
+        <div id="exams" class="section">
+            <h2>Exams</h2>
+            <div id="examsList">
+                <p>Loading exams...</p>
+            </div>
+        </div>
 
-        // Theme toggle
-        const themeSelect = document.getElementById('theme');
-        if (themeSelect) {
-            themeSelect.addEventListener('change', (e) => {
-                const theme
+        <!-- Fees Section -->
+        <div id="fees" class="section">
+            <h2>Fee Management</h2>
+            <div id="feesList">
+                <p>Loading fees...</p>
+            </div>
+        </div>
+
+        <!-- Salary Section -->
+        <div id="salary" class="section">
+            <h2>Salary Management</h2>
+            <div class="salary-actions">
+                <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
+                <button class="btn btn-primary" onclick="document.getElementById('excelUpload').click()">Upload Excel</button>
+            </div>
+            <div id="salaryList">
+                <p>Loading salaries...</p>
+            </div>
+            <div id="salaryFormContainer">
+                <form id="salaryForm">
+                    <!-- Salary form fields -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Salary</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports" class="section">
+            <h2>Reports</h2>
+            <div id="reportsList">
+                <p>Loading reports...</p>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings" class="section">
+            <h2>Settings</h2>
+            <div class="form-container">
+                <form id="schoolInfoForm">
+                    <h3>School Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="schoolName">School Name</label>
+                            <input type="text" id="schoolName">
+                        </div>
+                        <div class="form-group">
+                            <label for="schoolCode">School Code</label>
+                            <input type="text" id="schoolCode">
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <textarea id="address"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="website">Website</label>
+                            <input type="url" id="website">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save School Info</button>
+                    </div>
+                </form>
+
+                <form id="systemPrefsForm">
+                    <h3>System Preferences</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="theme">Theme</label>
+                            <select id="theme">
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="language">Language</label>
+                            <select id="language">
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="notifications"> Enable Notifications
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Preferences</button>
+                    </div>
+                </form>
+
+                <form id="securityForm">
+                    <h3>Security Settings</h3>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="sessionTimeout"> Enable Session Timeout
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Security Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="schoolSystem.closeModal()">&times;</span>
+                <h3 id="modalTitle">Edit Item</h3>
+                <form id="editForm">
+                    <!-- Dynamic form fields -->
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
