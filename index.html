@@ -124,19 +124,17 @@
 
             <!-- Students Section -->
             <section id="students" class="section">
-                <div class="section-header">
-                    <h2><i class="fas fa-user-graduate"></i> Student Management</h2>
-                    <button class="btn btn-primary" onclick="showAddStudentForm()">
-                        <i class="fas fa-plus"></i> Add Student
-                    </button>
-                    <select id="studentSelect" onchange="updateSelectedStudent()">
-                        <option value="">Select Student</option>
-                    </select>
-                    <input type="file" id="studentPhoto" accept="image/*" style="margin: 10px 0;">
-                    <button class="btn btn-success" onclick="generateIDCard()">
-                        <i class="fas fa-id-card"></i> Generate ID Card
-                    </button>
-                </div>
+<div class="section-header">
+    <h2><i class="fas fa-user-graduate"></i> Student Management</h2>
+    <button class="btn btn-primary" onclick="showAddStudentForm()">
+        <i class="fas fa-plus"></i> Add Student
+    </button>
+    <select id="studentSelect" onchange="updateSelectedStudent()">
+        <option value="">Select Student</option>
+    </select>
+    <button class="btn btn-success" onclick="generateIDCard()">
+        <i class="fas fa-id-card"></i> Generate ID Card
+    </button>
                 <div class="filters">
                     <input type="text" id="studentSearch" placeholder="Search students..." onkeyup="filterStudents()">
                     <select id="classFilter" onchange="filterStudents()">
