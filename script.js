@@ -2181,14 +2181,17 @@ function logout() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (window.location.pathname !== '/login.html') {
+    if (!window.location.pathname.endsWith('login.html')) {
         checkAuth();
+        schoolSystem = new SchoolManagementSystem();
+        
+        // Set current date for attendance
+        const today = new Date().toISOString().split('T')[0];
+        const attendanceDate = document.getElementById('attendanceDate');
+        if (attendanceDate) {
+            attendanceDate.value = today;
+        }
     }
-    schoolSystem = new SchoolManagementSystem();
-    
-    // Set current date for attendance
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('attendanceDate').value = today;
 });
 
 function showAddStudentForm() {
