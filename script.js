@@ -2164,10 +2164,31 @@ class SchoolManagementSystem {
     }
 }
 
+function checkAuth() {
+    if (localStorage.getItem('loggedIn') !== 'true') {
+        window.location.href = 'login.html';
+    }
+}
+
 // Global functions for HTML onclick handlers
 function showSection(sectionName) {
     schoolSystem.showSection(sectionName);
 }
+
+function logout() {
+    localStorage.removeItem('loggedIn');
+    window.location.href = 'login.html';
+}
+
+// Check auth on load
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuth();
+    schoolSystem = new SchoolManagementSystem();
+    
+    // Set current date for attendance
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('attendanceDate').value = today;
+});
 
 function showAddStudentForm() {
     schoolSystem.showAddStudentForm();
