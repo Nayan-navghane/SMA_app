@@ -1,5 +1,3 @@
-const schoolSystem = new SchoolManagementSystem();
-
 class SchoolManagementSystem {
     constructor() {
         this.students = JSON.parse(localStorage.getItem('students')) || [];
@@ -545,3 +543,5 @@ class SchoolManagementSystem {
         alert('Excel upload functionality requires additional libraries (e.g., SheetJS). Stub implemented.');
     }
 }
+
+const schoolSystem = new SchoolManagementSystem();
