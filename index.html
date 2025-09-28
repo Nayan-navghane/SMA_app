@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Management System</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -18,7 +19,7 @@
         </script>
         -->
 
-        <nav class="navbar">
+        <nav class="sidebar">
             <a href="#" class="nav-brand">School Management System</a>
             <ul class="nav-menu">
                 <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
@@ -37,313 +38,316 @@
             </ul>
         </nav>
 
-        <!-- Dashboard Section -->
-        <div id="dashboard" class="section active">
-            <h2>Dashboard</h2>
-            <div class="dashboard-stats">
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-users"></i></div>
-                    <div class="stat-number" id="totalStudents">0</div>
-                    <div class="stat-label">Total Students</div>
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="section active">
+                <h2>Dashboard</h2>
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-number" id="totalStudents">0</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                        <div class="stat-number" id="totalTeachers">0</div>
+                        <div class="stat-label">Total Teachers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+                        <div class="stat-number" id="pendingAdmissions">0</div>
+                        <div class="stat-label">Pending Admissions</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
-                    <div class="stat-number" id="totalTeachers">0</div>
-                    <div class="stat-label">Total Teachers</div>
+                <div class="recent-activities">
+                    <h3>Recent Activities</h3>
+                    <ul class="activity-list" id="recentActivities">
+                        <li class="activity-item"><span class="activity-time">Just now</span> - Welcome to the School Management System</li>
+                    </ul>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-door-open"></i></div>
-                    <div class="stat-number" id="totalAdmissions">0</div>
-                    <div class="stat-label">Admissions</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-money-bill"></i></div>
-                    <div class="stat-number" id="totalFees">0</div>
-                    <div class="stat-label">Fees Collected</div>
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <button class="btn btn-primary">New Admission</button>
+                    <button class="btn btn-secondary">Add Student</button>
+                    <button class="btn btn-success">Mark Attendance</button>
                 </div>
             </div>
-            <div class="recent-activities">
-                <h3>Recent Activities</h3>
-                <ul class="activity-list" id="recentActivities">
-                    <li class="activity-item"><span class="activity-time">Just now</span> - Welcome to the School Management System</li>
-                </ul>
-            </div>
-        </div>
 
-        <!-- Students Section -->
-        <div id="students" class="section">
-            <h2>Students Management</h2>
-            <div class="filters">
-                <input type="text" id="studentSearch" placeholder="Search by name or roll no...">
-                <select id="classFilter">
-                    <option value="">All Classes</option>
-                </select>
+            <!-- Students Section -->
+            <div id="students" class="section">
+                <h2>Students Management</h2>
+                <div class="filters">
+                    <input type="text" id="studentSearch" placeholder="Search by name or roll no...">
+                    <select id="classFilter">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+                <div class="form-container">
+                    <form id="studentForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rollNo">Roll No</label>
+                                <input type="text" id="rollNo" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentName">Name</label>
+                                <input type="text" id="studentName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentClass">Class</label>
+                                <select id="studentClass" required>
+                                    <option value="">Select Class</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="parentName">Parent Name</label>
+                                <input type="text" id="parentName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contact">Contact</label>
+                                <input type="tel" id="contact" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Student</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.clearForm('studentForm')">Clear</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="studentsList">
+                    <p>Loading students...</p>
+                </div>
             </div>
-            <div class="form-container">
-                <form id="studentForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="rollNo">Roll No</label>
-                            <input type="text" id="rollNo" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="studentName">Name</label>
-                            <input type="text" id="studentName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="studentClass">Class</label>
-                            <select id="studentClass" required>
-                                <option value="">Select Class</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="parentName">Parent Name</label>
-                            <input type="text" id="parentName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="contact">Contact</label>
-                            <input type="tel" id="contact" required>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Add Student</button>
-                        <button type="button" class="btn btn-secondary" onclick="schoolSystem.clearForm('studentForm')">Clear</button>
-                    </div>
-                </form>
-            </div>
-            <div id="studentsList">
-                <p>Loading students...</p>
-            </div>
-        </div>
 
-        <!-- Teachers Section -->
-        <div id="teachers" class="section">
-            <h2>Teachers Management</h2>
-            <div class="filters">
-                <input type="text" id="teacherSearch" placeholder="Search by name or subject...">
-                <select id="subjectFilter">
-                    <option value="">All Subjects</option>
-                </select>
+            <!-- Teachers Section -->
+            <div id="teachers" class="section">
+                <h2>Teachers Management</h2>
+                <div class="filters">
+                    <input type="text" id="teacherSearch" placeholder="Search by name or subject...">
+                    <select id="subjectFilter">
+                        <option value="">All Subjects</option>
+                    </select>
+                </div>
+                <div class="form-container">
+                    <form id="teacherForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teacherName">Name</label>
+                                <input type="text" id="teacherName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="subject">Subject</label>
+                                <select id="subject" required>
+                                    <option value="">Select Subject</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience">Experience (years)</label>
+                                <input type="number" id="experience" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="teacherContact">Contact</label>
+                                <input type="tel" id="teacherContact" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="qualification">Qualification</label>
+                                <input type="text" id="qualification" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Teacher</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.clearForm('teacherForm')">Clear</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="teachersList">
+                    <p>Loading teachers...</p>
+                </div>
             </div>
-            <div class="form-container">
-                <form id="teacherForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="teacherName">Name</label>
-                            <input type="text" id="teacherName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="subject">Subject</label>
-                            <select id="subject" required>
-                                <option value="">Select Subject</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="experience">Experience (years)</label>
-                            <input type="number" id="experience" min="0" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="teacherContact">Contact</label>
-                            <input type="tel" id="teacherContact" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="qualification">Qualification</label>
-                            <input type="text" id="qualification" required>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Add Teacher</button>
-                        <button type="button" class="btn btn-secondary" onclick="schoolSystem.clearForm('teacherForm')">Clear</button>
-                    </div>
-                </form>
-            </div>
-            <div id="teachersList">
-                <p>Loading teachers...</p>
-            </div>
-        </div>
 
-        <!-- Staff Section -->
-        <div id="staff" class="section">
-            <h2>Staff Management</h2>
-            <div class="filters">
-                <select id="departmentFilter">
-                    <option value="">All Departments</option>
-                </select>
+            <!-- Staff Section -->
+            <div id="staff" class="section">
+                <h2>Staff Management</h2>
+                <div class="filters">
+                    <select id="departmentFilter">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <div id="staffList">
+                    <p>Loading staff...</p>
+                </div>
             </div>
-            <div id="staffList">
-                <p>Loading staff...</p>
-            </div>
-        </div>
 
-        <!-- Admissions Section -->
-        <div id="admissions" class="section">
-            <h2>Admissions</h2>
-            <div class="filters">
-                <select id="admissionStatus">
-                    <option value="">All Status</option>
-                </select>
-            </div>
-            <div class="form-container">
-                <form id="admissionForm">
-                    <!-- Admission form fields -->
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Submit Admission</button>
-                    </div>
-                </form>
-            </div>
-            <div id="admissionsList">
-                <p>Loading admissions...</p>
-            </div>
-        </div>
-
-        <!-- Attendance Section -->
-        <div id="attendance" class="section">
-            <h2>Attendance</h2>
-            <div id="attendanceList">
-                <p>Loading attendance...</p>
-            </div>
-        </div>
-
-        <!-- Schedule Section -->
-        <div id="schedule" class="section">
-            <h2>Class Schedule</h2>
-            <div id="scheduleList">
-                <p>Loading schedule...</p>
-            </div>
-        </div>
-
-        <!-- Exams Section -->
-        <div id="exams" class="section">
-            <h2>Exams</h2>
-            <div id="examsList">
-                <p>Loading exams...</p>
-            </div>
-        </div>
-
-        <!-- Fees Section -->
-        <div id="fees" class="section">
-            <h2>Fee Management</h2>
-            <div id="feesList">
-                <p>Loading fees...</p>
-            </div>
-        </div>
-
-        <!-- Salary Section -->
-        <div id="salary" class="section">
-            <h2>Salary Management</h2>
-            <div class="salary-actions">
-                <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
-                <button class="btn btn-primary" onclick="document.getElementById('excelUpload').click()">Upload Excel</button>
-            </div>
-            <div id="salaryList">
-                <p>Loading salaries...</p>
-            </div>
-            <div id="salaryFormContainer">
-                <form id="salaryForm">
-                    <!-- Salary form fields -->
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Save Salary</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Reports Section -->
-        <div id="reports" class="section">
-            <h2>Reports</h2>
-            <div id="reportsList">
-                <p>Loading reports...</p>
-            </div>
-        </div>
-
-        <!-- Settings Section -->
-        <div id="settings" class="section">
-            <h2>Settings</h2>
-            <div class="form-container">
-                <form id="schoolInfoForm">
-                    <h3>School Information</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="schoolName">School Name</label>
-                            <input type="text" id="schoolName">
+            <!-- Admissions Section -->
+            <div id="admissions" class="section">
+                <h2>Admissions</h2>
+                <div class="filters">
+                    <select id="admissionStatus">
+                        <option value="">All Status</option>
+                    </select>
+                </div>
+                <div class="form-container">
+                    <form id="admissionForm">
+                        <!-- Admission form fields -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Submit Admission</button>
                         </div>
-                        <div class="form-group">
-                            <label for="schoolCode">School Code</label>
-                            <input type="text" id="schoolCode">
-                        </div>
-                        <div class="form-group">
-                            <label for="address">Address</label>
-                            <textarea id="address"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone</label>
-                            <input type="tel" id="phone">
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email">
-                        </div>
-                        <div class="form-group">
-                            <label for="website">Website</label>
-                            <input type="url" id="website">
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Save School Info</button>
-                    </div>
-                </form>
+                    </form>
+                </div>
+                <div id="admissionsList">
+                    <p>Loading admissions...</p>
+                </div>
+            </div>
 
-                <form id="systemPrefsForm">
-                    <h3>System Preferences</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="theme">Theme</label>
-                            <select id="theme">
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                            </select>
+            <!-- Attendance Section -->
+            <div id="attendance" class="section">
+                <h2>Attendance</h2>
+                <div id="attendanceList">
+                    <p>Loading attendance...</p>
+                </div>
+            </div>
+
+            <!-- Schedule Section -->
+            <div id="schedule" class="section">
+                <h2>Class Schedule</h2>
+                <div id="scheduleList">
+                    <p>Loading schedule...</p>
+                </div>
+            </div>
+
+            <!-- Exams Section -->
+            <div id="exams" class="section">
+                <h2>Exams</h2>
+                <div id="examsList">
+                    <p>Loading exams...</p>
+                </div>
+            </div>
+
+            <!-- Fees Section -->
+            <div id="fees" class="section">
+                <h2>Fee Management</h2>
+                <div id="feesList">
+                    <p>Loading fees...</p>
+                </div>
+            </div>
+
+            <!-- Salary Section -->
+            <div id="salary" class="section">
+                <h2>Salary Management</h2>
+                <div class="salary-actions">
+                    <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
+                    <button class="btn btn-primary" onclick="document.getElementById('excelUpload').click()">Upload Excel</button>
+                </div>
+                <div id="salaryList">
+                    <p>Loading salaries...</p>
+                </div>
+                <div id="salaryFormContainer">
+                    <form id="salaryForm">
+                        <!-- Salary form fields -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Salary</button>
                         </div>
-                        <div class="form-group">
-                            <label for="language">Language</label>
-                            <select id="language">
-                                <option value="en">English</option>
-                            </select>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports" class="section">
+                <h2>Reports</h2>
+                <div id="reportsList">
+                    <p>Loading reports...</p>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings" class="section">
+                <h2>Settings</h2>
+                <div class="form-container">
+                    <form id="schoolInfoForm">
+                        <h3>School Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="schoolName">School Name</label>
+                                <input type="text" id="schoolName">
+                            </div>
+                            <div class="form-group">
+                                <label for="schoolCode">School Code</label>
+                                <input type="text" id="schoolCode">
+                            </div>
+                            <div class="form-group">
+                                <label for="address">Address</label>
+                                <textarea id="address"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone</label>
+                                <input type="tel" id="phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email">
+                            </div>
+                            <div class="form-group">
+                                <label for="website">Website</label>
+                                <input type="url" id="website">
+                            </div>
                         </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save School Info</button>
+                        </div>
+                    </form>
+
+                    <form id="systemPrefsForm">
+                        <h3>System Preferences</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="theme">Theme</label>
+                                <select id="theme">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="language">Language</label>
+                                <select id="language">
+                                    <option value="en">English</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="notifications"> Enable Notifications
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Preferences</button>
+                        </div>
+                    </form>
+
+                    <form id="securityForm">
+                        <h3>Security Settings</h3>
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="notifications"> Enable Notifications
+                                <input type="checkbox" id="sessionTimeout"> Enable Session Timeout
                             </label>
                         </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Save Preferences</button>
-                    </div>
-                </form>
-
-                <form id="securityForm">
-                    <h3>Security Settings</h3>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="sessionTimeout"> Enable Session Timeout
-                        </label>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Save Security Settings</button>
-                    </div>
-                </form>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Security Settings</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
 
-        <!-- Edit Modal -->
-        <div id="editModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="schoolSystem.closeModal()">&times;</span>
-                <h3 id="modalTitle">Edit Item</h3>
-                <form id="editForm">
-                    <!-- Dynamic form fields -->
-                </form>
+            <!-- Edit Modal -->
+            <div id="editModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="schoolSystem.closeModal()">&times;</span>
+                    <h3 id="modalTitle">Edit Item</h3>
+                    <form id="editForm">
+                        <!-- Dynamic form fields -->
+                    </form>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
     <script src="script.js"></script>
 </body>
