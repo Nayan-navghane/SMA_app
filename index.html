@@ -1,863 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Management System</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <!-- Navigation -->
-        <nav class="navbar">
-            <div class="nav-brand">
-                <i class="fas fa-graduation-cap" style="width: 24px; height: 24px; margin-right: 10px;"></i>
-                <span>School Management System</span>
-            </div>
-            <div class="nav-menu">
-                <a href="#" class="nav-link active" data-section="dashboard">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="#" class="nav-link" data-section="students">
-                    <i class="fas fa-user-graduate"></i> Students
-                </a>
-                <a href="#" class="nav-link" data-section="teachers">
-                    <i class="fas fa-chalkboard-teacher"></i> Teachers
-                </a>
-                <a href="#" class="nav-link" data-section="salary">
-                    <i class="fas fa-dollar-sign"></i> Salary
-                </a>
-                <a href="#" class="nav-link" data-section="admissions">
-                    <i class="fas fa-user-plus"></i> Admissions
-                </a>
-                <a href="#" class="nav-link" data-section="attendance">
-                    <i class="fas fa-calendar-check"></i> Attendance
-                </a>
-                <a href="#" class="nav-link" data-section="schedule">
-                    <i class="fas fa-calendar"></i> Schedule
-                </a>
-                <a href="#" class="nav-link" data-section="exams">
-                    <i class="fas fa-file-alt"></i> Exams
-                </a>
-                <a href="#" class="nav-link" data-section="fees">
-                    <i class="fas fa-rupee-sign"></i> Fee Management
-                </a>
-                <a href="#" class="nav-link" data-section="reports">
-                    <i class="fas fa-chart-bar"></i> Reports
-                </a>
-                <a href="#" class="nav-link" data-section="staff">
-                    <i class="fas fa-users"></i> Staff
-                </a>
-                <a href="#" class="nav-link" data-section="settings">
-                    <i class="fas fa-cog"></i> Settings
-                </a>
-                <a href="#" class="nav-link" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </nav>
+const schoolSystem = new SchoolManagementSystem();
 
-        <!-- Dashboard Section -->
-        <section id="dashboard" class="section active">
-            <div class="section-header">
-                <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
-            </div>
-            <div class="dashboard-stats">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                    <div class="stat-number" id="totalStudents">0</div>
-                    <div class="stat-label">Total Students</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
-                    <div class="stat-number" id="totalTeachers">0</div>
-                    <div class="stat-label">Total Teachers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <div class="stat-number" id="pendingAdmissions">0</div>
-                    <div class="stat-label">Pending Admissions</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="stat-number" id="todayAttendance">0</div>
-                    <div class="stat-label">Today's Attendance</div>
-                </div>
-            </div>
-            <div class="dashboard-content">
-                <div class="recent-activities">
-                    <h3>Recent Activities</h3>
-                    <div id="recentList" class="activity-list">
-                        <p>No recent activities</p>
-                    </div>
-                </div>
-                <div class="quick-actions">
-                    <h3>Quick Actions</h3>
-                    <button class="btn btn-primary" onclick="showSection('admissions')">
-                        <i class="fas fa-user-plus"></i> New Admission
-                    </button>
-                    <button class="btn btn-secondary" onclick="showSection('students')">
-                        <i class="fas fa-user-graduate"></i> Add Student
-                    </button>
-                    <button class="btn btn-success" onclick="showSection('attendance')">
-                        <i class="fas fa-calendar-check"></i> Mark Attendance
-                    </button>
-                </div>
-            </div>
-        </section>
+class SchoolManagementSystem {
+    constructor() {
+        this.students = JSON.parse(localStorage.getItem('students')) || [];
+        this.teachers = JSON.parse(localStorage.getItem('teachers')) || [];
+        this.salaries = JSON.parse(localStorage.getItem('salaries')) || [];
+        this.admissions = JSON.parse(localStorage.getItem('admissions')) || [];
+        this.attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+        this.exams = JSON.parse(localStorage.getItem('exams')) || [];
+        this.schedules = JSON.parse(localStorage.getItem('schedules')) || {};
+        this.activities = JSON.parse(localStorage.getItem('activities')) || [];
+        this.settings = JSON.parse(localStorage.getItem('settings')) || this.getDefaultSettings();
+        this.staff = JSON.parse(localStorage.getItem('staff')) || [];
+        this.init();
+    }
 
-        <!-- Students Section -->
-        <section id="students" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-user-graduate"></i> Student Management</h2>
-                <button class="btn btn-primary" onclick="showAddStudentForm()">
-                    <i class="fas fa-plus"></i> Add Student
-                </button>
-            </div>
-            <div class="filters">
-                <input type="text" id="studentSearch" placeholder="Search students..." onkeyup="filterStudents()">
-                <select id="classFilter" onchange="filterStudents()">
-                    <option value="">All Classes</option>
-                </select>
-            </div>
-            <div id="studentsList" class="data-table">
-                <p>No students found. Add your first student!</p>
-            </div>
-        </section>
+    getDefaultSettings() {
+        return {
+            schoolInfo: {
+                name: 'Government School',
+                code: 'GOVT001',
+                address: 'Government School Address',
+                phone: '123-456-7890',
+                email: 'govt.school@example.com',
+                website: 'govt.school.gov'
+            },
+            preferences: {
+                theme: 'light',
+                language: 'en',
+                timezone: 'Asia/Kolkata',
+                dateFormat: 'DD/MM/YYYY',
+                autoBackup: false,
+                notifications: true
+            },
+            security: {
+                sessionTimeout: false
+            }
+        };
+    }
 
-        <!-- Teachers Section -->
-        <section id="teachers" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-chalkboard-teacher"></i> Teacher Management</h2>
-                <button class="btn btn-primary" onclick="showAddTeacherForm()">
-                    <i class="fas fa-plus"></i> Add Teacher
-                </button>
-            </div>
-            <div class="filters">
-                <input type="text" id="teacherSearch" placeholder="Search teachers..." onkeyup="filterTeachers()">
-                <select id="subjectFilter" onchange="filterTeachers()">
-                    <option value="">All Subjects</option>
-                </select>
-            </div>
-            <div id="teachersList" class="data-table">
-                <p>No teachers found. Add your first teacher!</p>
-            </div>
-        </section>
+    init() {
+        this.setupEventListeners();
+        this.loadDashboardData();
+        this.populateFilters();
+        this.setCurrentDate();
+    }
 
-        <!-- Salary Management Section -->
-        <section id="salary" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-dollar-sign"></i> Teacher Salary Management</h2>
-                <button class="btn btn-primary" onclick="showAddSalaryForm()">
-                    <i class="fas fa-plus"></i> Add Salary
-                </button>
-            </div>
-            <div class="filters">
-                <input type="text" id="salarySearch" placeholder="Search salaries..." onkeyup="filterSalaries()">
-            </div>
-            <div id="salariesList" class="data-table">
-                <p>No salary records found. Add your first salary record!</p>
-            </div>
-            <div id="salaryFormContainer" class="form-container" style="display: none;">
-                <form id="salaryForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="teacherSelect">Teacher Name *</label>
-                            <select id="teacherSelect" required>
-                                <option value="">Select Teacher</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="designation">Designation *</label>
-                            <input type="text" id="designation" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="basicSalary">Basic Salary *</label>
-                            <input type="number" id="basicSalary" required min="0" step="0.01" oninput="calculateNetSalary()">
-                        </div>
-                        <div class="form-group">
-                            <label for="allowances">Allowances *</label>
-                            <input type="number" id="allowances" required min="0" step="0.01" oninput="calculateNetSalary()">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="deductions">Deductions *</label>
-                            <input type="number" id="deductions" required min="0" step="0.01" oninput="calculateNetSalary()">
-                        </div>
-                        <div class="form-group">
-                            <label for="netSalary">Net Salary</label>
-                            <input type="number" id="netSalary" readonly>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Salary
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="closeSalaryForm()">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <div class="salary-actions">
-                <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
-                <button class="btn btn-secondary" onclick="document.getElementById('excelUpload').click()">
-                    <i class="fas fa-upload"></i> Upload Excel
-                </button>
-                <button class="btn btn-success" onclick="downloadSalaryExcel()">
-                    <i class="fas fa-download"></i> Download Excel
-                </button>
-            </div>
-        </section>
+    setCurrentDate() {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            if (!input.value) {
+                input.value = today;
+            }
+        });
+    }
 
-        <!-- Admissions Section -->
-        <section id="admissions" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-user-plus"></i> Admission Management</h2>
-                <div class="admission-tabs">
-                    <button type="button" class="tab-btn active" onclick="showAdmissionTab('new')">
-                        <i class="fas fa-plus"></i> New Application
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showAdmissionTab('pending')">
-                        <i class="fas fa-clock"></i> Pending Review
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showAdmissionTab('processed')">
-                        <i class="fas fa-check-circle"></i> Processed
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showAdmissionTab('recycle')">
-                        <i class="fas fa-recycle"></i> Recycle Bin
-                    </button>
-                </div>
-            </div>
-            
-            <!-- New Admission Form -->
-            <div id="newAdmissionForm" class="admission-tab-content active">
-                <form id="admissionForm" class="form-container">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="studentName">Student Name *</label>
-                            <input type="text" id="studentName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="admissionClass">Class *</label>
-                            <select id="admissionClass" required>
-                                <option value="">Select Class</option>
-                                <option value="Nursery">Nursery</option>
-                                <option value="LKG">LKG</option>
-                                <option value="UKG">UKG</option>
-                                <option value="1">Class 1</option>
-                                <option value="2">Class 2</option>
-                                <option value="3">Class 3</option>
-                                <option value="4">Class 4</option>
-                                <option value="5">Class 5</option>
-                                <option value="6">Class 6</option>
-                                <option value="7">Class 7</option>
-                                <option value="8">Class 8</option>
-                                <option value="9">Class 9</option>
-                                <option value="10">Class 10</option>
-                                <option value="11">Class 11</option>
-                                <option value="12">Class 12</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="parentName">Parent/Guardian Name *</label>
-                            <input type="text" id="parentName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="contactNumber">Contact Number *</label>
-                            <input type="tel" id="contactNumber" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email">
-                        </div>
-                        <div class="form-group">
-                            <label for="dateOfBirth">Date of Birth *</label>
-                            <input type="date" id="dateOfBirth" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="address">Address *</label>
-                            <textarea id="address" rows="3" required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="previousSchool">Previous School</label>
-                            <input type="text" id="previousSchool">
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Submit Application
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="resetForm('admissionForm')">
-                            <i class="fas fa-undo"></i> Reset
-                        </button>
-                    </div>
-                </form>
-            </div>
+    populateFilters() {
+        // Populate class filters
+        const classes = [...new Set([...this.students, ...this.teachers].map(item => item.class || item.subject || '')).filter(cls => cls)].sort();
+        const classSelectors = document.querySelectorAll('select[id$="Class"]');
+        classSelectors.forEach(selector => {
+            selector.innerHTML = '<option value="">All Classes</option>' + classes.map(cls => `<option value="${cls}">${cls}</option>`).join('');
+        });
 
-            <!-- Pending Admissions -->
-            <div id="pendingAdmissions" class="admission-tab-content">
-                <div class="admission-stats">
-                    <div class="stat-badge">
-                        <span class="stat-number" id="pendingCount">0</span>
-                        <span class="stat-label">Pending</span>
-                    </div>
-                </div>
-                <div id="pendingAdmissionsList" class="admissions-list">
-                    <p>No pending admissions to review.</p>
-                </div>
-            </div>
+        // Populate subject filters
+        const subjects = [...new Set(this.teachers.map(t => t.subject))].sort();
+        const subjectSelectors = document.querySelectorAll('select[id$="Subject"]');
+        subjectSelectors.forEach(selector => {
+            selector.innerHTML = '<option value="">All Subjects</option>' + subjects.map(sub => `<option value="${sub}">${sub}</option>`).join('');
+        });
 
-            <!-- Processed Admissions -->
-            <div id="processedAdmissions" class="admission-tab-content">
-                <div class="filters">
-                    <select id="processedFilter" onchange="filterProcessedAdmissions()">
-                        <option value="">All Processed</option>
-                        <option value="accepted">Accepted</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
-                    <input type="text" id="processedSearch" placeholder="Search processed admissions..." onkeyup="filterProcessedAdmissions()">
-                </div>
-                <div id="processedAdmissionsList" class="admissions-list">
-                    <p>No processed admissions found.</p>
-                </div>
-            </div>
+        // Populate department filters
+        const departments = [...new Set(this.staff.map(s => s.department))].sort();
+        const departmentSelectors = document.querySelectorAll('select[id$="Department"]');
+        departmentSelectors.forEach(selector => {
+            selector.innerHTML = '<option value="">All Departments</option>' + departments.map(dept => `<option value="${dept}">${dept}</option>`).join('');
+        });
 
-            <!-- Recycle Bin -->
-            <div id="recycleBin" class="admission-tab-content">
-                <div class="admission-stats">
-                    <div class="stat-badge">
-                        <span class="stat-number" id="recycleCount">0</span>
-                        <span class="stat-label">In Recycle Bin</span>
-                    </div>
-                </div>
-                <div id="recycleBinList" class="admissions-list">
-                    <p>Recycle bin is empty.</p>
-                </div>
-            </div>
-        </section>
+        // Populate status filters
+        const statusSelectors = document.querySelectorAll('select[id$="Status"]');
+        statusSelectors.forEach(selector => {
+            selector.innerHTML = '<option value="">All Status</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option>';
+        });
+    }
 
-        <!-- Attendance Section -->
-        <section id="attendance" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-calendar-check"></i> Attendance Management</h2>
-            </div>
-            <div class="attendance-controls">
-                <select id="attendanceClass" onchange="loadAttendanceSheet()">
-                    <option value="">Select Class</option>
-                </select>
-                <input type="date" id="attendanceDate" onchange="loadAttendanceSheet()" value="">
-            </div>
-            <div id="attendanceSheet" class="attendance-container">
-                <p>Select a class and date to view attendance</p>
-            </div>
-        </section>
+    setupEventListeners() {
+        // Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = e.currentTarget.getAttribute('data-section');
+                this.showSection(section);
+            });
+        });
 
-        <!-- Schedule Section -->
-        <section id="schedule" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-calendar"></i> Class Schedule</h2>
-            </div>
-            <div class="schedule-controls">
-                <select id="scheduleClass" onchange="loadSchedule()">
-                    <option value="">Select Class</option>
-                </select>
-            </div>
-            <div id="scheduleTable" class="schedule-container">
-                <p>Select a class to view schedule</p>
-            </div>
-        </section>
+        // Forms
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formId = form.id;
+                if (formId === 'studentForm') {
+                    this.handleStudentSubmit(e);
+                } else if (formId === 'teacherForm') {
+                    this.handleTeacherSubmit(e);
+                } else if (formId === 'salaryForm') {
+                    this.handleSalarySubmit(e);
+                } else if (formId === 'admissionForm') {
+                    this.handleAdmissionSubmit(e);
+                } else if (formId === 'schoolInfoForm') {
+                    this.saveSchoolInfo(e);
+                } else if (formId === 'systemPrefsForm') {
+                    this.saveSystemPreferences(e);
+                } else if (formId === 'securityForm') {
+                    this.saveSecuritySettings(e);
+                } else if (formId === 'extraExpenseForm') {
+                    this.handleExtraExpenseSubmit(e);
+                }
+            });
+        });
 
-        <!-- Exams Section -->
-        <section id="exams" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-file-alt"></i> Exam Management</h2>
-                <div class="exam-tabs">
-                    <button type="button" class="tab-btn active" onclick="showExamTab('papers')">
-                        <i class="fas fa-file-word"></i> Question Papers
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showExamTab('exams')">
-                        <i class="fas fa-clipboard-list"></i> Exam Schedule
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showExamTab('results')">
-                        <i class="fas fa-chart-bar"></i> Results
-                    </button>
-                </div>
-            </div>
+        // Excel upload
+        const excelUpload = document.getElementById('excelUpload');
+        if (excelUpload) {
+            excelUpload.addEventListener('change', (e) => this.uploadSalaryExcel(e));
+        }
 
-            <!-- Question Papers Tab -->
-            <div id="papersTab" class="exam-tab-content active">
-                <div class="paper-controls">
-                    <button class="btn btn-primary" onclick="showPaperCreator()">
-                        <i class="fas fa-plus"></i> Create New Paper
-                    </button>
-                    <button class="btn btn-secondary" onclick="loadPapers()">
-                        <i class="fas fa-sync"></i> Refresh Papers
-                    </button>
-                    <select id="subjectFilter" onchange="filterPapers()">
-                        <option value="">All Subjects</option>
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Science">Science</option>
-                        <option value="English">English</option>
-                        <option value="Social Studies">Social Studies</option>
-                        <option value="Hindi">Hindi</option>
-                    </select>
-                </div>
-                <div id="papersList" class="papers-container">
-                    <p>No question papers created yet. Create your first paper!</p>
-                </div>
-            </div>
-
-            <!-- Exam Schedule Tab -->
-            <div id="examsTab" class="exam-tab-content">
-                <div class="exam-controls">
-                    <button class="btn btn-primary" onclick="showCreateExamForm()">
-                        <i class="fas fa-plus"></i> Schedule Exam
-                    </button>
-                </div>
-                <div id="examsList" class="data-table">
-                    <p>No exams scheduled yet</p>
-                </div>
-            </div>
-
-            <!-- Results Tab -->
-            <div id="resultsTab" class="exam-tab-content">
-                <div class="results-controls">
-                    <select id="resultsClassFilter" onchange="loadResults()">
-                        <option value="">Select Class</option>
-                    </select>
-                    <select id="resultsSubjectFilter" onchange="loadResults()">
-                        <option value="">All Subjects</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="generateReportCards()">
-                        <i class="fas fa-file-pdf"></i> Generate Report Cards
-                    </button>
-                </div>
-                <div id="resultsList" class="data-table">
-                    <p>Select class and subject to view results</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Fee Management Section -->
-        <section id="fees" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-rupee-sign"></i> Fee Management</h2>
-                <div class="fee-tabs">
-                    <button type="button" class="tab-btn active" onclick="showFeeTab('collect')">
-                        <i class="fas fa-plus-circle"></i> Collect Fee
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showFeeTab('records')">
-                        <i class="fas fa-list"></i> Fee Records
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showFeeTab('structure')">
-                        <i class="fas fa-cog"></i> Fee Structure
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showFeeTab('reports')">
-                        <i class="fas fa-chart-bar"></i> Fee Reports
-                    </button>
-                    <button type="button" class="tab-btn" onclick="showFeeTab('extra')">
-                        <i class="fas fa-file-invoice"></i> Extra Expenses
-                    </button>
-                </div>
-            </div>
-
-            <!-- Fee Collection Tab -->
-            <div id="collectFeeTab" class="fee-tab-content active">
-                <div class="fee-collection-form">
-                    <div class="student-selector">
-                        <div class="form-group">
-                            <label for="feeStudentSearch">Search Student *</label>
-                            <input type="text" id="feeStudentSearch" placeholder="Enter student name or roll number..." onkeyup="searchStudentsForFee()">
-                                <div id="studentSuggestions" class="suggestions-list"></div>
-                        </div>
-                    </div>
-
-                    <div id="selectedStudentInfo" class="selected-student" style="display: none;">
-                        <h4>Selected Student:</h4>
-                        <div class="student-details-card">
-                            <p><strong>Name:</strong> <span id="selectedStudentName"></span></p>
-                            <p><strong>Roll No:</strong> <span id="selectedStudentRoll"></span></p>
-                            <p><strong>Class:</strong> <span id="selectedStudentClass"></span></p>
-                            <p><strong>Parent:</strong> <span id="selectedStudentParent"></span></p>
-                        </div>
-                    </div>
-
-                    <form id="feeCollectionForm">
-                        <input type="hidden" id="selectedStudentId" name="studentId">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="feeType">Fee Type *</label>
-                                <select id="feeType" required>
-                                    <option value="">Select Fee Type</option>
-                                    <option value="tuition">Tuition Fee</option>
-                                    <option value="admission">Admission Fee</option>
-                                    <option value="exam">Exam Fee</option>
-                                    <option value="library">Library Fee</option>
-                                    <option value="sports">Sports Fee</option>
-                                    <option value="transport">Transport Fee</option>
-                                    <option value="activity">Activity Fee</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="feeAmount">Amount *</label>
-                                <input type="number" id="feeAmount" required min="1" step="0.01" placeholder="Enter amount">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="feeMonth">Month/Period *</label>
-                                <select id="feeMonth" required>
-                                    <option value="">Select Month</option>
-                                    <option value="January">January</option>
-                                    <option value="February">February</option>
-                                    <option value="March">March</option>
-                                    <option value="April">April</option>
-                                    <option value="May">May</option>
-                                    <option value="June">June</option>
-                                    <option value="July">July</option>
-                                    <option value="August">August</option>
-                                    <option value="September">September</option>
-                                    <option value="October">October</option>
-                                    <option value="November">November</option>
-                                    <option value="December">December</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="paymentDate">Payment Date *</label>
-                                <input type="date" id="paymentDate" required value="">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="feeDescription">Description</label>
-                                <textarea id="feeDescription" rows="2" placeholder="Optional description or notes..."></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="lateFee">Late Fee (if any)</label>
-                                <input type="number" id="lateFee" min="0" step="0.01" placeholder="Late fee amount">
-                            </div>
-                        </div>
-                        <div class="fee-summary">
-                            <div class="summary-row">
-                                <span>Fee Amount:</span>
-                                <span id="summaryAmount">₹0.00</span>
-                            </div>
-                            <div class="summary-row">
-                                <span>Late Fee:</span>
-                                <span id="summaryLateFee">₹0.00</span>
-                            </div>
-                            <div class="summary-row total">
-                                <span><strong>Total Amount:</strong></span>
-                                <span id="summaryTotal"><strong>₹0.00</strong></span>
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-receipt"></i> Generate Receipt
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="resetFeeForm()">
-                                <i class="fas fa-undo"></i> Reset
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Fee Records Tab -->
-            <div id="feeRecordsTab" class="fee-tab-content">
-                <div class="fee-controls">
-                    <select id="feeRecordsClassFilter" onchange="loadFeeRecords()">
-                        <option value="">All Classes</option>
-                    </select>
-                    <select id="feeRecordsMonthFilter" onchange="loadFeeRecords()">
-                        <option value="">All Months</option>
-                        <option value="January">January</option>
-                        <option value="February">February</option>
-                        <option value="March">March</option>
-                        <option value="April">April</option>
-                        <option value="May">May</option>
-                        <option value="June">June</option>
-                        <option value="July">July</option>
-                        <option value="August">August</option>
-                        <option value="September">September</option>
-                        <option value="October">October</option>
-                        <option value="November">November</option>
-                        <option value="December">December</option>
-                    </select>
-                    <input type="text" id="feeRecordsSearch" placeholder="Search by student name..." onkeyup="loadFeeRecords()">
-                </div>
-                <div id="feeRecordsList" class="fee-records-container">
-                    <p>No fee records found.</p>
-                </div>
-            </div>
-
-            <!-- Fee Structure Tab -->
-            <div id="feeStructureTab" class="fee-tab-content">
-                <div class="fee-structure-manager">
-                    <div class="structure-controls">
-                        <button class="btn btn-primary" onclick="showFeeStructureForm()">
-                            <i class="fas fa-plus"></i> Add Fee Structure
-                        </button>
-                        <button class="btn btn-secondary" onclick="loadFeeStructures()">
-                            <i class="fas fa-sync"></i> Refresh
-                        </button>
-                    </div>
-                    <div id="feeStructuresList" class="fee-structures-container">
-                        <p>No fee structures defined. Add fee structures for different classes.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fee Reports Tab -->
-            <div id="feeReportsTab" class="fee-tab-content">
-                <div class="fee-reports-options">
-                    <button class="btn btn-primary" onclick="generateFeeCollectionReport()">
-                        <i class="fas fa-chart-line"></i> Collection Report
-                    </button>
-                    <button class="btn btn-secondary" onclick="generatePendingFeesReport()">
-                        <i class="fas fa-clock"></i> Pending Fees
-                    </button>
-                    <button class="btn btn-success" onclick="generateFeeSummaryReport()">
-                        <i class="fas fa-file-invoice-dollar"></i> Fee Summary
-                    </button>
-                </div>
-                <div id="feeReportsContainer" class="fee-reports-display">
-                    <p>Select a report type to generate</p>
-                </div>
-            </div>
-
-            <!-- Extra Expenses Tab -->
-            <div id="extraTab" class="fee-tab-content">
-                <div class="extra-expenses-header">
-                    <h3>Extra Expenses</h3>
-                    <button class="btn btn-primary" onclick="showAddExtraExpenseForm()">
-                        <i class="fas fa-plus"></i> Add Extra Expense
-                    </button>
-                </div>
-                <div id="extraExpensesList" class="data-table">
-                    <p>No extra expenses added yet.</p>
-                </div>
-                <button class="btn btn-secondary" onclick="exportExtraExpenses()">
-                    <i class="fas fa-download"></i> Export to CSV
-                </button>
-            </div>
-        </section>
-
-        <!-- Reports Section -->
-        <section id="reports" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-chart-bar"></i> Reports</h2>
-            </div>
-            <div class="report-options">
-                <button class="btn btn-primary" onclick="generateStudentReport()">
-                    <i class="fas fa-user-graduate"></i> Student Report
-                </button>
-                <button class="btn btn-secondary" onclick="generateAttendanceReport()">
-                    <i class="fas fa-calendar-check"></i> Attendance Report
-                </button>
-                <button class="btn btn-success" onclick="generatePerformanceReport()">
-                    <i class="fas fa-chart-line"></i> Performance Report
-                </button>
-            </div>
-            <div id="reportsContainer" class="reports-display">
-                <p>Select a report type to generate</p>
-            </div>
-        </section>
-
-        <!-- Staff Section -->
-        <section id="staff" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-users"></i> Staff Management</h2>
-                <button class="btn btn-primary" onclick="showAddStaffForm()">
-                    <i class="fas fa-plus"></i> Add Staff
-                </button>
-            </div>
-            <div class="filters">
-                <input type="text" id="staffSearch" placeholder="Search staff..." onkeyup="filterStaff()">
-                <select id="departmentFilter" onchange="filterStaff()">
-                    <option value="">All Departments</option>
-                    <option value="Teaching">Teaching</option>
-                    <option value="Administration">Administration</option>
-                    <option value="Support">Support</option>
-                    <option value="Management">Management</option>
-                </select>
-            </div>
-            <div id="staffList" class="data-table">
-                <p>No staff members found. Add your first staff member!</p>
-            </div>
-        </section>
-
-        <!-- Settings Section -->
-        <section id="settings" class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-cog"></i> System Settings</h2>
-            </div>
-            
-            <div class="settings-container">
-                <!-- School Information -->
-                <div class="settings-card">
-                    <h3><i class="fas fa-school"></i> School Information</h3>
-                    <form id="schoolInfoForm" class="settings-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="schoolName">School Name *</label>
-                                <input type="text" id="schoolName" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="schoolCode">School Code</label>
-                                <input type="text" id="schoolCode">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="schoolAddress">Address *</label>
-                                <textarea id="schoolAddress" rows="3" required></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="schoolPhone">Phone Number *</label>
-                                <input type="tel" id="schoolPhone" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="schoolEmail">Email</label>
-                                <input type="email" id="schoolEmail">
-                            </div>
-                            <div class="form-group">
-                                <label for="schoolWebsite">Website</label>
-                                <input type="url" id="schoolWebsite">
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save School Info
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- System Preferences -->
-                <div class="settings-card">
-                    <h3><i class="fas fa-sliders-h"></i> System Preferences</h3>
-                    <form id="systemPrefsForm" class="settings-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="theme">Theme</label>
-                                <select id="theme">
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="language">Language</label>
-                                <select id="language">
-                                    <option value="en">English</option>
-                                    <option value="hi">Hindi</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="timezone">Timezone</label>
-                                <select id="timezone">
-                                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                                    <option value="America/New_York">America/New_York (EST)</option>
-                                    <option value="Europe/London">Europe/London (GMT)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="dateFormat">Date Format</label>
-                                <select id="dateFormat">
-                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="autoBackup">
-                                    <span class="checkmark"></span>
-                                    Enable Auto Backup
-                                </label>
-                            </div>
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="notifications">
-                                    <span class="checkmark"></span>
-                                    Enable Notifications
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save Preferences
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Security Settings -->
-                <div class="settings-card">
-                    <h3><i class="fas fa-shield-alt"></i> Security</h3>
-                    <form id="securityForm" class="settings-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="currentPassword">Current Password</label>
-                                <input type="password" id="currentPassword">
-                            </div>
-                            <div class="form-group">
-                                <label for="newPassword">New Password</label>
-                                <input type="password" id="newPassword">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="confirmPassword">Confirm New Password</label>
-                                <input type="password" id="confirmPassword">
-                            </div>
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="sessionTimeout">
-                                    <span class="checkmark"></span>
-                                    Auto Logout on Inactivity
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-key"></i> Update Password
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="generateSystemReport()">
-                                <i class="fas fa-file-pdf"></i> System Report
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
+        // Theme toggle
+        const themeSelect = document.getElementById('theme');
+        if (themeSelect) {
+            themeSelect.addEventListener('change', (e) => {
+                const theme
