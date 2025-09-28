@@ -152,9 +152,9 @@
             <!-- Teachers Section -->
             <section id="teachers" class="section">
 <div class="section-header">
-    <h2><i class="fas fa-user-graduate"></i> Student Management</h2>
-    <button class="btn btn-primary" onclick="showAddStudentForm()">
-        <i class="fas fa-plus"></i> Add Student
+    <h2><i class="fas fa-chalkboard-teacher"></i> Teacher Management</h2>
+    <button class="btn btn-primary" onclick="showAddTeacherForm()">
+        <i class="fas fa-plus"></i> Add Teacher
     </button>
                 <div class="filters">
                     <input type="text" id="teacherSearch" placeholder="Search teachers..." onkeyup="filterTeachers()">
@@ -651,16 +651,10 @@
             <!-- Staff Section -->
             <section id="staff" class="section">
 <div class="section-header">
-    <h2><i class="fas fa-user-graduate"></i> Student Management</h2>
-    <button class="btn btn-primary" onclick="showAddStudentForm()">
-        <i class="fas fa-plus"></i> Add Student
+    <h2><i class="fas fa-users"></i> Staff Management</h2>
+    <button class="btn btn-primary" onclick="showAddStaffForm()">
+        <i class="fas fa-plus"></i> Add Staff
     </button>
-    <div class="id-card-section">
-        <input type="file" id="studentPhoto" accept="image/*">
-        <button class="btn btn-success" onclick="generateIDCard()">
-            <i class="fas fa-id-card"></i> Generate ID Card
-        </button>
-    </div>
                 <div class="filters">
                     <input type="text" id="staffSearch" placeholder="Search staff..." onkeyup="filterStaff()">
                     <select id="departmentFilter" onchange="filterStaff()">
