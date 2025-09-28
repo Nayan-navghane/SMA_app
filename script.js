@@ -48,6 +48,14 @@ class SchoolManagementSystem {
         document.getElementById('systemPrefsForm').addEventListener('submit', (e) => this.saveSystemPreferences(e));
         document.getElementById('securityForm').addEventListener('submit', (e) => this.saveSecuritySettings(e));
 
+        // Theme toggle
+        document.getElementById('theme').addEventListener('change', (e) => {
+            const theme = e.target.value;
+            this.settings.preferences.theme = theme;
+            localStorage.setItem('settings', JSON.stringify(this.settings));
+            this.applyTheme(theme);
+        });
+
         // Search and filters
         document.getElementById('studentSearch').addEventListener('input', () => this.filterStudents());
         document.getElementById('teacherSearch').addEventListener('input', () => this.filterTeachers());
@@ -2140,6 +2148,19 @@ class SchoolManagementSystem {
 
     closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
+    }
+
+    applyTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.add('dark');
+        } else {
+            document.body.classList.remove('dark');
+        }
+        // Update the select value if needed
+        const themeSelect = document.getElementById('theme');
+        if (themeSelect) {
+            themeSelect.value = theme;
+        }
     }
 }
 
