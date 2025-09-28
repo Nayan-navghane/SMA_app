@@ -998,3 +998,221 @@ function closeModal(modalId) {
         modal.style.display = 'none';
     }
 }
+
+function showPaperCreator() {
+    document.getElementById('paperCreatorModal').style.display = 'block';
+}
+
+function showExamTab(tabName) {
+    // Hide all exam tab contents
+    document.querySelectorAll('.exam-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Remove active class from all exam tab buttons
+    document.querySelectorAll('.exam-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab content
+    const tabElement = document.getElementById(tabName + 'Tab');
+    if (tabElement) {
+        tabElement.classList.add('active');
+    }
+    
+    // Add active class to tab button
+    const tabBtn = document.querySelector(`[onclick="showExamTab('${tabName}')"]`);
+    if (tabBtn) {
+        tabBtn.classList.add('active');
+    }
+
+    // Load tab-specific data
+    switch(tabName) {
+        case 'papers':
+            schoolSystem.loadPapers();
+            break;
+        case 'exams':
+            schoolSystem.loadExamSchedules();
+            break;
+        case 'results':
+            schoolSystem.loadExamResults();
+            break;
+    }
+}
+
+function showCreateExamForm() {
+    // Placeholder for exam creation form
+    alert('Exam creation form coming soon!');
+}
+
+function loadPapers() {
+    const papersList = document.getElementById('papersList');
+    if (papersList) {
+        papersList.innerHTML = '<p>No question papers created yet. Create your first paper!</p>';
+    }
+}
+
+function loadExamSchedules() {
+    const examsList = document.getElementById('examsList');
+    if (examsList) {
+        examsList.innerHTML = '<p>No exams scheduled yet</p>';
+    }
+}
+
+function loadExamResults() {
+    const resultsList = document.getElementById('resultsList');
+    if (resultsList) {
+        resultsList.innerHTML = '<p>Select class and subject to view results</p>';
+    }
+}
+
+function generateReportCards() {
+    alert('Report cards generation coming soon!');
+}
+
+function formatText(command, value = null) {
+    const editor = document.getElementById('paperEditor');
+    if (editor) {
+        document.execCommand(command, false, value);
+        editor.focus();
+    }
+}
+
+function addQuestion() {
+    const editor = document.getElementById('paperEditor');
+    if (editor) {
+        const questionTemplate = `
+            <div class="question-template">
+                <div class="question-number">Q. [Number]</div>
+                <div class="question-text">[Question text here]</div>
+                <ul class="options-list">
+                    <li><span class="option-letter">A.</span> [Option A]</li>
+                    <li><span class="option-letter">B.</span> [Option B]</li>
+                    <li><span class="option-letter">C.</span> [Option C]</li>
+                    <li><span class="option-letter">D.</span> [Option D]</li>
+                </ul>
+                <div class="correct-answer">Correct Answer: [A/B/C/D]</div>
+            </div>
+        `;
+        editor.insertAdjacentHTML('beforeend', questionTemplate);
+        editor.focus();
+    }
+}
+
+function insertTable() {
+    const editor = document.getElementById('paperEditor');
+    if (editor) {
+        const tableTemplate = `
+            <table border="1" style="border-collapse: collapse; width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="padding: 8px; text-align: left;">Header 1</th>
+                        <th style="padding: 8px; text-align: left;">Header 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 8px;">Row 1, Cell 1</td>
+                        <td style="padding: 8px;">Row 1, Cell 2</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px;">Row 2, Cell 1</td>
+                        <td style="padding: 8px;">Row 2, Cell 2</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+        editor.insertAdjacentHTML('beforeend', tableTemplate);
+        editor.focus();
+    }
+}
+
+function previewPaper() {
+    const editor = document.getElementById('paperEditor');
+    if (editor) {
+        const previewWindow = window.open('', '_blank');
+        const previewContent = `
+            <html>
+            <head>
+                <title>Paper Preview</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; font-size: 14px; }
+                    .question-template { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+                    .question-number { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+                    .options-list { margin: 10px 0; padding-left: 20px; }
+                    .correct-answer { color: green; font-weight: bold; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                ${editor.innerHTML}
+            </body>
+            </html>
+        `;
+        previewWindow.document.write(previewContent);
+        previewWindow.document.close();
+    }
+}
+
+function savePaper() {
+    const paperData = {
+        id: Date.now(),
+        title: document.getElementById('paperTitle').value,
+        subject: document.getElementById('paperSubject').value,
+        class: document.getElementById('paperClass').value,
+        duration: document.getElementById('paperDuration').value,
+        totalMarks: document.getElementById('paperTotalMarks').value,
+        instructions: document.getElementById('paperInstructions').value,
+        content: document.getElementById('paperEditor').innerHTML,
+        createdAt: new Date().toISOString()
+    };
+
+    if (!paperData.title || !paperData.subject || !paperData.class) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    schoolSystem.questionPapers.push(paperData);
+    localStorage.setItem('questionPapers', JSON.stringify(schoolSystem.questionPapers));
+    alert('Paper saved successfully!');
+    closeModal('paperCreatorModal');
+    schoolSystem.loadPapers();
+}
+
+function generatePDF() {
+    alert('PDF generation coming soon! Paper content will be saved.');
+    savePaper();
+}
+
+function printPaper() {
+    const editor = document.getElementById('paperEditor');
+    if (editor) {
+        const printWindow = window.open('', '_blank');
+        const printContent = `
+            <html>
+            <head>
+                <title>Print Paper</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; font-size: 14px; }
+                    @media print { body { margin: 0; } }
+                </style>
+            </head>
+            <body>
+                <h1>${document.getElementById('paperTitle').value}</h1>
+                <p><strong>Subject:</strong> ${document.getElementById('paperSubject').value}</p>
+                <p><strong>Class:</strong> ${document.getElementById('paperClass').value}</p>
+                <p><strong>Duration:</strong> ${document.getElementById('paperDuration').value} minutes</p>
+                <p><strong>Total Marks:</strong> ${document.getElementById('paperTotalMarks').value}</p>
+                ${document.getElementById('paperInstructions').value ? `<p><strong>Instructions:</strong> ${document.getElementById('paperInstructions').value}</p>` : ''}
+                <hr>
+                ${editor.innerHTML}
+            </body>
+            </html>
+        `;
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.close();
+        };
+    }
+}
