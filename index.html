@@ -6,6 +6,7 @@
     <title>School Management System</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -24,6 +25,9 @@
                 </a>
                 <a href="#" class="nav-link" data-section="teachers">
                     <i class="fas fa-chalkboard-teacher"></i> Teachers
+                </a>
+                <a href="#" class="nav-link" data-section="salary">
+                    <i class="fas fa-dollar-sign"></i> Salary
                 </a>
                 <a href="#" class="nav-link" data-section="admissions">
                     <i class="fas fa-user-plus"></i> Admissions
@@ -164,6 +168,80 @@
                 </div>
                 <div id="teachersList" class="data-table">
                     <p>No teachers found. Add your first teacher!</p>
+                </div>
+            </section>
+
+            <!-- Salary Management Section -->
+            <section id="salary" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-dollar-sign"></i> Teacher Salary Management</h2>
+                    <button class="btn btn-primary" onclick="showAddSalaryForm()">
+                        <i class="fas fa-plus"></i> Add Salary
+                    </button>
+                    <div class="salary-actions">
+                        <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
+                        <button class="btn btn-secondary" onclick="document.getElementById('excelUpload').click()">
+                            <i class="fas fa-upload"></i> Upload Excel
+                        </button>
+                        <button class="btn btn-success" onclick="downloadSalaryExcel()">
+                            <i class="fas fa-download"></i> Download Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add/Update Salary Form -->
+                <div id="salaryFormContainer" class="form-container" style="display: none;">
+                    <form id="salaryForm">
+                        <input type="hidden" id="salaryId">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teacherSelect">Teacher Name *</label>
+                                <select id="teacherSelect" required>
+                                    <option value="">Select Teacher</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="designation">Designation *</label>
+                                <input type="text" id="designation" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="basicSalary">Basic Salary *</label>
+                                <input type="number" id="basicSalary" required min="0" step="0.01" oninput="calculateNetSalary()">
+                            </div>
+                            <div class="form-group">
+                                <label for="allowances">Allowances *</label>
+                                <input type="number" id="allowances" required min="0" step="0.01" oninput="calculateNetSalary()">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="deductions">Deductions *</label>
+                                <input type="number" id="deductions" required min="0" step="0.01" oninput="calculateNetSalary()">
+                            </div>
+                            <div class="form-group">
+                                <label for="netSalary">Net Salary</label>
+                                <input type="number" id="netSalary" readonly>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Salary
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="closeSalaryForm()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Salary List -->
+                <div class="filters">
+                    <input type="text" id="salarySearch" placeholder="Search salaries..." onkeyup="filterSalaries()">
+                </div>
+                <div id="salariesList" class="data-table">
+                    <p>No salary records found. Add your first salary record!</p>
                 </div>
             </section>
 

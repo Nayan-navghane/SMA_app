@@ -179,6 +179,9 @@ class SchoolManagementSystem {
             case 'staff':
                 this.loadStaff();
                 break;
+            case 'salary':
+                this.loadSalaries();
+                break;
             case 'settings':
                 this.loadSettings();
                 break;
@@ -867,6 +870,127 @@ class SchoolManagementSystem {
             staffList.innerHTML = '<p>Staff management feature coming soon!</p>';
         }
     }
+
+    // Salary Management
+    loadSalaries() {
+        const salariesList = document.getElementById('salariesList');
+        if (!salariesList) return;
+
+        // Populate teacher select
+        const teacherSelect = document.getElementById('teacherSelect');
+        if (teacherSelect) {
+            teacherSelect.innerHTML = '<option value="">Select Teacher</option>' + 
+                this.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        }
+
+        const searchTerm = document.getElementById('salarySearch');
+        let filteredSalaries = this.salaries;
+
+        if (searchTerm && searchTerm.value) {
+            const term = searchTerm.value.toLowerCase();
+            filteredSalaries = filteredSalaries.filter(s => 
+                s.teacherName.toLowerCase().includes(term) || 
+                s.designation.toLowerCase().includes(term)
+            );
+        }
+
+        if (filteredSalaries.length === 0) {
+            salariesList.innerHTML = '<p>No salary records found. Add your first salary record!</p>';
+            return;
+        }
+
+        salariesList.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Teacher Name</th>
+                        <th>Designation</th>
+                        <th>Basic Salary</th>
+                        <th>Allowances</th>
+                        <th>Deductions</th>
+                        <th>Net Salary</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredSalaries.map(salary => `
+                        <tr>
+                            <td>${salary.teacherName}</td>
+                            <td>${salary.designation}</td>
+                            <td>₹${salary.basicSalary}</td>
+                            <td>₹${salary.allowances}</td>
+                            <td>₹${salary.deductions}</td>
+                            <td>₹${salary.netSalary}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="schoolSystem.editSalary(${salary.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteSalary(${salary.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Salary Management
+    loadSalaries() {
+        const salariesList = document.getElementById('salariesList');
+        if (!salariesList) return;
+
+        // Populate teacher select
+        const teacherSelect = document.getElementById('teacherSelect');
+        if (teacherSelect) {
+            teacherSelect.innerHTML = '<option value="">Select Teacher</option>' + 
+                this.teachers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+        }
+
+        const searchTerm = document.getElementById('salarySearch');
+        let filteredSalaries = this.salaries;
+
+        if (searchTerm && searchTerm.value) {
+            const term = searchTerm.value.toLowerCase();
+            filteredSalaries = filteredSalaries.filter(s => 
+                s.teacherName.toLowerCase().includes(term) || 
+                s.designation.toLowerCase().includes(term)
+            );
+        }
+
+        if (filteredSalaries.length === 0) {
+            salariesList.innerHTML = '<p>No salary records found. Add your first salary record!</p>';
+            return;
+        }
+
+        salariesList.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Teacher Name</th>
+                        <th>Designation</th>
+                        <th>Basic Salary</th>
+                        <th>Allowances</th>
+                        <th>Deductions</th>
+                        <th>Net Salary</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredSalaries.map(salary => `
+                        <tr>
+                            <td>${salary.teacherName}</td>
+                            <td>${salary.designation}</td>
+                            <td>₹${salary.basicSalary}</td>
+                            <td>₹${salary.allowances}</td>
+                            <td>₹${salary.deductions}</td>
+                            <td>₹${salary.netSalary}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="schoolSystem.editSalary(${salary.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="school
 
     // Utility Methods
     formatDate(dateString) {
