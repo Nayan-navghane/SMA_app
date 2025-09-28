@@ -19,6 +19,7 @@ class SchoolManagementSystem {
         this.examSchedules = JSON.parse(localStorage.getItem('examSchedules')) || [];
         this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
         this.recycleBin = JSON.parse(localStorage.getItem('recycleBin')) || [];
+        this.init();
     }
 
     getDefaultSettings() {
