@@ -2320,6 +2320,47 @@ function generatePDF() {
     }
 }
 
+function generateIDCard() {
+    if (schoolSystem.students.length === 0) {
+        alert('No students available. Please add a student first.');
+        return;
+    }
+    // For simplicity, generate for the first student. In a full app, you might have a selection modal.
+    const student = schoolSystem.students[0];
+    const idCardContent = `
+        <html>
+        <head>
+            <title>Student ID Card - ${student.name}</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: white; }
+                .id-card { width: 350px; height: 220px; border: 2px solid #333; padding: 20px; margin: 0 auto; background: #f8f9fa; border-radius: 10px; }
+                .school-name { font-size: 14px; color: #666; margin-bottom: 10px; }
+                .student-name { font-size: 20px; font-weight: bold; margin: 10px 0; }
+                .student-details { font-size: 14px; margin: 5px 0; }
+                .roll-no { font-size: 16px; color: #2193b0; font-weight: bold; }
+                .validity { font-size: 12px; color: #666; margin-top: 15px; }
+            </style>
+        </head>
+        <body>
+            <div class="id-card">
+                <div class="school-name">School Management System</div>
+                <div class="student-name">${student.name}</div>
+                <div class="student-details">Class: ${student.class}</div>
+                <div class="roll-no">Roll No: ${student.rollNo}</div>
+                <div class="student-details">Admission Date: ${new Date(student.admissionDate).toLocaleDateString()}</div>
+                <div class="validity">Valid until end of academic year</div>
+            </div>
+            <script>
+                window.onload = function() { window.print(); window.close(); }
+            </script>
+        </body>
+        </html>
+    `;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(idCardContent);
+    printWindow.document.close();
+}
+
 function printPaper() {
     // Similar logic as generatePDF but for printing
     const editor = document.getElementById('paperEditor');
