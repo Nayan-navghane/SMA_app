@@ -1,5 +1,10 @@
 class SchoolManagementSystem {
     constructor() {
+        if (!localStorage.getItem('loggedIn') || localStorage.getItem('loggedIn') !== 'true') {
+            window.location.href = 'login.html';
+            return;
+        }
+
         this.students = JSON.parse(localStorage.getItem('students')) || [];
         this.teachers = JSON.parse(localStorage.getItem('teachers')) || [];
         this.salaries = JSON.parse(localStorage.getItem('salaries')) || [];
@@ -541,6 +546,11 @@ class SchoolManagementSystem {
     // Excel upload stub
     handleExcelUpload(e) {
         alert('Excel upload functionality requires additional libraries (e.g., SheetJS). Stub implemented.');
+    }
+
+    logout() {
+        localStorage.removeItem('loggedIn');
+        window.location.href = 'login.html';
     }
 }
 
