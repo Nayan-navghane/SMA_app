@@ -266,6 +266,11 @@ class SchoolManagementSystem {
                 </tbody>
             </table>
         `;
+
+        // Populate student select dropdown with all students
+        const studentSelect = document.getElementById('studentSelect');
+        studentSelect.innerHTML = '<option value="">Select Student</option>' +
+            this.students.map(student => `<option value="${student.id}">${student.name} - ${student.class} (${student.rollNo})</option>`).join('');
     }
 
     deleteStudent(studentId) {
@@ -2321,44 +2326,72 @@ function generatePDF() {
 }
 
 function generateIDCard() {
-    if (schoolSystem.students.length === 0) {
-        alert('No students available. Please add a student first.');
+    const selectedId = document.getElementById('studentSelect').value;
+    if (!selectedId) {
+        alert('Please select a student first.');
         return;
     }
-    // For simplicity, generate for the first student. In a full app, you might have a selection modal.
-    const student = schoolSystem.students[0];
-    const idCardContent = `
-        <html>
-        <head>
-            <title>Student ID Card - ${student.name}</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: white; }
-                .id-card { width: 350px; height: 220px; border: 2px solid #333; padding: 20px; margin: 0 auto; background: #f8f9fa; border-radius: 10px; }
-                .school-name { font-size: 14px; color: #666; margin-bottom: 10px; }
-                .student-name { font-size: 20px; font-weight: bold; margin: 10px 0; }
-                .student-details { font-size: 14px; margin: 5px 0; }
-                .roll-no { font-size: 16px; color: #2193b0; font-weight: bold; }
-                .validity { font-size: 12px; color: #666; margin-top: 15px; }
-            </style>
-        </head>
-        <body>
-            <div class="id-card">
-                <div class="school-name">School Management System</div>
-                <div class="student-name">${student.name}</div>
-                <div class="student-details">Class: ${student.class}</div>
-                <div class="roll-no">Roll No: ${student.rollNo}</div>
-                <div class="student-details">Admission Date: ${new Date(student.admissionDate).toLocaleDateString()}</div>
-                <div class="validity">Valid until end of academic year</div>
-            </div>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            </script>
-        </body>
-        </html>
-    `;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(idCardContent);
-    printWindow.document.close();
+    const student = schoolSystem.students.find(s => s.id == selectedId);
+    if (!student) {
+        alert('Selected student not found.');
+        return;
+    }
+    const photoInput = document.getElementById('idCardPhoto');
+    const file = photoInput.files[0];
+    const placeholderSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjgwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iODAiIGZpbGw9IiNjY2MiLz48dGV4dCB4PSI1MCIgeT0iNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5QaG90byBOb3QgQXZhaWxhYmxlPC90ZXh0Pjwvc3ZnPg==';
+    let photoSrc = placeholderSrc;
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            photoSrc = e.target.result;
+            openPrintWindow(photoSrc, student);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        openPrintWindow(photoSrc, student);
+    }
+
+    function openPrintWindow(src, stu) {
+        const idCardContent = `
+            <html>
+            <head>
+                <title>Student ID Card - ${stu.name}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: white; }
+                    .id-card { width: 350px; height: 220px; border: 2px solid #333; padding: 20px; margin: 0 auto; background: #f8f9fa; border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; }
+                    .photo-section { width: 100px; height: 80px; margin: 0 auto 10px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
+                    .photo-section img { width: 100%; height: 100%; object-fit: cover; }
+                    .school-name { font-size: 14px; color: #666; margin-bottom: 5px; }
+                    .student-name { font-size: 18px; font-weight: bold; margin: 5px 0; }
+                    .student-details { font-size: 12px; margin: 2px 0; }
+                    .roll-no { font-size: 14px; color: #2193b0; font-weight: bold; }
+                    .validity { font-size: 10px; color: #666; margin-top: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="id-card">
+                    <div class="photo-section">
+                        <img src="${src}" alt="Student Photo">
+                    </div>
+                    <div class="school-name">School Management System</div>
+                    <div class="student-name">${stu.name}</div>
+                    <div class="student-details">Class: ${stu.class}</div>
+                    <div class="roll-no">Roll No: ${stu.rollNo}</div>
+                    <div class="student-details">DOB: ${new Date(stu.dateOfBirth).toLocaleDateString()}</div>
+                    <div class="student-details">Parent: ${stu.parentName}</div>
+                    <div class="validity">Valid until end of academic year</div>
+                </div>
+                <script>
+                    window.onload = function() { window.print(); window.close(); }
+                </script>
+            </body>
+            </html>
+        `;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(idCardContent);
+        printWindow.document.close();
+    }
 }
 
 function printPaper() {

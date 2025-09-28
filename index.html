@@ -132,9 +132,12 @@
     <select id="studentSelect" onchange="updateSelectedStudent()">
         <option value="">Select Student</option>
     </select>
-    <button class="btn btn-success" onclick="generateIDCard()">
-        <i class="fas fa-id-card"></i> Generate ID Card
-    </button>
+    <div class="id-card-section">
+        <input type="file" id="idCardPhoto" accept="image/*">
+        <button class="btn btn-success" onclick="generateIDCard()">
+            <i class="fas fa-id-card"></i> Generate ID Card
+        </button>
+    </div>
                 <div class="filters">
                     <input type="text" id="studentSearch" placeholder="Search students..." onkeyup="filterStudents()">
                     <select id="classFilter" onchange="filterStudents()">
