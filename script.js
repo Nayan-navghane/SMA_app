@@ -170,7 +170,9 @@ class SchoolManagementSystem {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const section = link.getAttribute('data-section');
-                this.showSection(section);
+                if (section) {
+                    this.showSection(section);
+                }
             });
         });
 
