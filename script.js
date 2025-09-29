@@ -607,8 +607,27 @@ class SchoolManagementSystem {
     loadDashboardData() {
         document.getElementById('totalStudents').textContent = this.students.length;
         document.getElementById('totalTeachers').textContent = this.teachers.length;
-        document.getElementById('totalAdmissions').textContent = this.admissions.length;
-        document.getElementById('totalFees').textContent = this.feeRecords.reduce((sum, f) => sum + (f.amount || 0), 0);
+        const pendingCount = this.admissions.filter(a => a.status === 'pending').length || this.admissions.length;
+        document.getElementById('pendingAdmissions').textContent = pendingCount;
+        this.loadRecentActivities();
+    }
+
+    loadRecentActivities() {
+        const activitiesList = document.getElementById('recentActivities');
+        if (!activitiesList) return;
+
+        if (this.activities.length === 0) {
+            this.activities = [
+                { id: Date.now() - 7200000, action: 'New student added', user: 'Admin', time: '2 hours ago' },
+                { id: Date.now() - 86400000, action: 'Attendance marked for Class 10', user: 'Teacher Smith', time: '1 day ago' },
+                { id: Date.now() - 259200000, action: 'Fee payment received from John Doe', user: 'Parent', time: '3 days ago' }
+            ];
+            localStorage.setItem('activities', JSON.stringify(this.activities));
+        }
+
+        activitiesList.innerHTML = this.activities.slice(-5).map(activity => 
+            `<li class="activity-item">${activity.action} by ${activity.user} - ${activity.time}</li>`
+        ).join('') || '<li class="activity-item">No recent activities</li>';
     }
 
     // Excel upload stub
