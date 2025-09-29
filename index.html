@@ -491,8 +491,59 @@
             <!-- Fees Section -->
             <div id="fees" class="section">
                 <h2>Fee Management</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="schoolSystem.showAddFeeRecordForm()">Add Fee Record</button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="feeSearch" placeholder="Search by name, roll no, or class...">
+                    <select id="feeStatusFilter">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="partial">Partial</option>
+                    </select>
+                </div>
+                <div class="form-container" id="addFeeRecordFormContainer" style="display: none;">
+                    <form id="feeRecordForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="feeStudent">Student</label>
+                                <select id="feeStudent" required>
+                                    <option value="">Select Student</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="feeTotal">Total Fees</label>
+                                <input type="number" id="feeTotal" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="feePaid">Fees Paid</label>
+                                <input type="number" id="feePaid" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="feeDueDate">Due Date</label>
+                                <input type="date" id="feeDueDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="feeStatus">Status</label>
+                                <select id="feeStatus" required>
+                                    <option value="pending">Pending</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="partial">Partial</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Fee Record</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddFeeRecordForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
                 <div id="feesList">
-                    <p>Loading fees...</p>
+                    <p>No fee records found.</p>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="schoolSystem.downloadFeesReport()">Download Report</button>
                 </div>
             </div>
 

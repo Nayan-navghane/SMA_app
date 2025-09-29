@@ -299,7 +299,7 @@ class SchoolManagementSystem {
                 this.loadExams();
                 break;
             case 'fees':
-                this.loadFees();
+                this.loadFeeRecords();
                 break;
             case 'reports':
                 this.loadReports();
@@ -1397,60 +1397,127 @@ class SchoolManagementSystem {
     }
 
     // Stub for loadFees
-    showAddFeeForm() {
-        document.getElementById('addFeeFormContainer').style.display = 'block';
+    showAddFeeRecordForm() {
+        document.getElementById('addFeeRecordFormContainer').style.display = 'block';
+        this.populateStudentSelect('feeStudent');
     }
 
-    hideAddFeeForm() {
-        document.getElementById('addFeeFormContainer').style.display = 'none';
-        this.clearForm('feeForm');
+    hideAddFeeRecordForm() {
+        document.getElementById('addFeeRecordFormContainer').style.display = 'none';
+        this.clearForm('feeRecordForm');
     }
 
-    addFeeStructure() {
-        const fee = {
-            id: Date.now(),
-            class: document.getElementById('feeClass').value,
-            amount: parseFloat(document.getElementById('feeAmount').value),
-            dueDate: document.getElementById('feeDueDate').value,
-            status: document.getElementById('feeStatus').value
-        };
-        this.feeStructures.push(fee);
-        localStorage.setItem('feeStructures', JSON.stringify(this.feeStructures));
-        this.loadFees();
-        this.hideAddFeeForm();
-        alert('Fee structure added successfully!');
-    }
-
-    loadFees() {
-        const feesList = document.getElementById('feesList');
-        if (!feesList) return;
-        if (this.feeStructures.length === 0) {
-            feesList.innerHTML = '<p>No fee structures added yet. Add your first fee structure!</p>';
+    addFeeRecord() {
+        const studentId = document.getElementById('feeStudent').value;
+        if (!studentId) {
+            alert('Please select a student.');
             return;
         }
-        const html = this.feeStructures.map(fee => `
-            <tr>
-                <td>${fee.class}</td>
-                <td>$${fee.amount}</td>
-                <td>${fee.dueDate}</td>
-                <td><span class="status-badge status-${fee.status}">${fee.status}</span></td>
-                <td>
-                    <button class="btn btn-sm btn-primary" onclick="schoolSystem.editFee(${fee.id})">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteFee(${fee.id})">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                </td>
-            </tr>
+        const feeRecord = {
+            id: Date.now(),
+            studentId: parseInt(studentId),
+            totalFees: parseFloat(document.getElementById('feeTotal').value),
+            paidFees: parseFloat(document.getElementById('feePaid').value),
+            pendingFees: parseFloat(document.getElementById('feeTotal').value) - parseFloat(document.getElementById('feePaid').value),
+            dueDate: document.getElementById('feeDueDate').value,
+            paymentDate: new Date().toISOString().split('T')[0],
+            status: document.getElementById('feeStatus').value
+        };
+        this.feeRecords.push(feeRecord);
+        localStorage.setItem('feeRecords', JSON.stringify(this.feeRecords));
+        this.loadFeeRecords();
+        this.hideAddFeeRecordForm();
+        alert('Fee record added successfully!');
+    }
+
+    updateFeeRecord(id) {
+        const feeRecord = this.feeRecords.find(f => f.id === id);
+        if (feeRecord) {
+            feeRecord.totalFees = parseFloat(document.getElementById('feeTotal').value);
+            feeRecord.paidFees = parseFloat(document.getElementById('feePaid').value);
+            feeRecord.pendingFees = feeRecord.totalFees - feeRecord.paidFees;
+            feeRecord.dueDate = document.getElementById('feeDueDate').value;
+            feeRecord.status = document.getElementById('feeStatus').value;
+            localStorage.setItem('feeRecords', JSON.stringify(this.feeRecords));
+            this.loadFeeRecords();
+            alert('Fee record updated successfully!');
+        }
+    }
+
+    deleteFeeRecord(id) {
+        if (confirm('Are you sure you want to delete this fee record?')) {
+            this.feeRecords = this.feeRecords.filter(f => f.id !== id);
+            localStorage.setItem('feeRecords', JSON.stringify(this.feeRecords));
+            this.loadFeeRecords();
+        }
+    }
+
+    populateStudentSelect(selectId) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        const students = this.students.map(s => `
+            <option value="${s.id}">${s.rollNo} - ${s.name} (${s.class})</option>
         `).join('');
+        select.innerHTML = '<option value="">Select Student</option>' + students;
+    }
+
+    loadFeeRecords() {
+        const feesList = document.getElementById('feesList');
+        if (!feesList) return;
+        let filteredRecords = this.feeRecords;
+        const searchTerm = document.getElementById('feeSearch').value.toLowerCase();
+        const statusFilter = document.getElementById('feeStatusFilter').value;
+
+        if (searchTerm) {
+            filteredRecords = filteredRecords.filter(f => 
+                this.students.find(s => s.id === f.studentId && (s.name.toLowerCase().includes(searchTerm) || s.rollNo.toLowerCase().includes(searchTerm) || s.class.toLowerCase().includes(searchTerm)))
+            );
+        }
+
+        if (statusFilter) {
+            filteredRecords = filteredRecords.filter(f => f.status === statusFilter);
+        }
+
+        if (filteredRecords.length === 0) {
+            feesList.innerHTML = '<p>No fee records found.</p>';
+            return;
+        }
+
+        const html = filteredRecords.map(record => {
+            const student = this.students.find(s => s.id === record.studentId);
+            return `
+                <tr>
+                    <td>${student ? student.name : 'Unknown'}</td>
+                    <td>${student ? student.rollNo : 'N/A'}</td>
+                    <td>${student ? student.class : 'N/A'}</td>
+                    <td>$${record.totalFees}</td>
+                    <td>$${record.paidFees}</td>
+                    <td>$${record.pendingFees}</td>
+                    <td>${record.paymentDate}</td>
+                    <td><span class="status-badge status-${record.status}">${record.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="schoolSystem.editFeeRecord(${record.id})">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteFeeRecord(${record.id})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
         feesList.innerHTML = `
             <table class="data-table">
                 <thead>
                     <tr>
+                        <th>Student Name</th>
+                        <th>Roll No</th>
                         <th>Class</th>
-                        <th>Amount</th>
-                        <th>Due Date</th>
+                        <th>Total Fees</th>
+                        <th>Paid Fees</th>
+                        <th>Pending Fees</th>
+                        <th>Payment Date</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -1460,6 +1527,49 @@ class SchoolManagementSystem {
                 </tbody>
             </table>
         `;
+    }
+
+    editFeeRecord(id) {
+        const feeRecord = this.feeRecords.find(f => f.id === id);
+        if (feeRecord) {
+            document.getElementById('feeStudent').value = feeRecord.studentId;
+            document.getElementById('feeTotal').value = feeRecord.totalFees;
+            document.getElementById('feePaid').value = feeRecord.paidFees;
+            document.getElementById('feeDueDate').value = feeRecord.dueDate;
+            document.getElementById('feeStatus').value = feeRecord.status;
+            document.querySelector('#feeRecordForm button[type="submit"]').textContent = 'Update Fee Record';
+            this.currentEditingFeeRecord = id;
+            this.showAddFeeRecordForm();
+        }
+    }
+
+    downloadFeesReport() {
+        // Simple implementation - in real app, use a library like SheetJS
+        const filteredRecords = this.feeRecords;
+        const csvContent = [
+            ['Student Name', 'Roll No', 'Class', 'Total Fees', 'Paid Fees', 'Pending Fees', 'Due Date', 'Status'],
+            ...filteredRecords.map(record => {
+                const student = this.students.find(s => s.id === record.studentId);
+                return [
+                    student ? student.name : 'Unknown',
+                    student ? student.rollNo : 'N/A',
+                    student ? student.class : 'N/A',
+                    record.totalFees,
+                    record.paidFees,
+                    record.pendingFees,
+                    record.dueDate,
+                    record.status
+                ];
+            })
+        ].map(row => row.join(',')).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fees_report.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
     }
 
     // Stub for loadSalaries
