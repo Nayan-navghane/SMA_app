@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <div class="container">
@@ -30,7 +31,7 @@
                 <li><a href="#" class="nav-link" data-section="reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
                 <li><a href="#" class="nav-link" data-section="staff"><i class="fas fa-users-cog"></i> Staff</a></li>
                 <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Settings</a></li>
-                <li><a href="#" class="nav-link" onclick="schoolSystem.logout(); return false;"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a href="#" onclick="schoolSystem.logout(); return false;"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>
 
@@ -472,8 +473,8 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="paperQuestions">Questions (one per line)</label>
-                                <textarea id="paperQuestions" rows="10" placeholder="Enter questions, one per line..." required></textarea>
+                                <label for="paperEditor">Exam Content</label>
+                                <div id="paperEditor" style="border: 1px solid #ddd; min-height: 300px;"></div>
                             </div>
                             <div class="form-group">
                                 <label for="paperDuration">Duration (minutes)</label>

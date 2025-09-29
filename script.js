@@ -75,6 +75,14 @@ class SchoolManagementSystem {
         } catch (e) {
             this.questionPapers = [];
         }
+        // Migrate legacy papers to use content
+        this.questionPapers.forEach(paper => {
+            if (paper.questions && !paper.content) {
+                paper.content = paper.questions.map(q => `<p>${q.trim()}</p>`).join('');
+                delete paper.questions;
+            }
+        });
+        localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
         try {
             this.examSchedules = JSON.parse(localStorage.getItem('examSchedules')) || [];
         } catch (e) {
@@ -1157,22 +1165,46 @@ class SchoolManagementSystem {
         document.getElementById('addPaperFormContainer').style.display = 'block';
         this.currentEditingPaper = null;
         document.querySelector('#paperForm button[type="submit"]').textContent = 'Create Paper';
+        // Initialize TinyMCE
+        if (typeof tinymce !== 'undefined') {
+            tinymce.init({
+                selector: '#paperEditor',
+                height: 300,
+                menubar: false,
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                    'preview', 'anchor', 'searchreplace', 'visualblocks',
+                    'code', 'fullscreen', 'insertdatetime', 'media', 'table',
+                    'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+            });
+        }
     }
 
     hideAddPaperForm() {
+        // Destroy TinyMCE to clean up
+        if (typeof tinymce !== 'undefined' && tinymce.get('paperEditor')) {
+            tinymce.get('paperEditor').remove();
+        }
         document.getElementById('addPaperFormContainer').style.display = 'none';
         this.clearForm('paperForm');
     }
 
     addPaper() {
-        const questions = document.getElementById('paperQuestions').value.split('\n').filter(q => q.trim());
+        const content = tinymce.get('paperEditor').getContent();
+        if (!content.trim()) {
+            alert('Please enter exam content.');
+            return;
+        }
         const paper = {
             id: Date.now(),
             title: document.getElementById('paperTitle').value,
             class: document.getElementById('paperClass').value,
             subject: document.getElementById('paperSubject').value,
             type: document.getElementById('paperType').value,
-            questions: questions,
+            content: content,
             duration: parseInt(document.getElementById('paperDuration').value),
             totalMarks: parseInt(document.getElementById('paperTotalMarks').value),
             createdDate: new Date().toISOString().split('T')[0]
@@ -1188,12 +1220,16 @@ class SchoolManagementSystem {
     updatePaper(id) {
         const paper = this.questionPapers.find(p => p.id === id);
         if (paper) {
-            const questions = document.getElementById('paperQuestions').value.split('\n').filter(q => q.trim());
+            const content = tinymce.get('paperEditor').getContent();
+            if (!content.trim()) {
+                alert('Please enter exam content.');
+                return;
+            }
             paper.title = document.getElementById('paperTitle').value;
             paper.class = document.getElementById('paperClass').value;
             paper.subject = document.getElementById('paperSubject').value;
             paper.type = document.getElementById('paperType').value;
-            paper.questions = questions;
+            paper.content = content;
             paper.duration = parseInt(document.getElementById('paperDuration').value);
             paper.totalMarks = parseInt(document.getElementById('paperTotalMarks').value);
             localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
@@ -1213,12 +1249,18 @@ class SchoolManagementSystem {
             document.getElementById('paperClass').value = paper.class;
             document.getElementById('paperSubject').value = paper.subject;
             document.getElementById('paperType').value = paper.type;
-            document.getElementById('paperQuestions').value = paper.questions.join('\n');
             document.getElementById('paperDuration').value = paper.duration;
             document.getElementById('paperTotalMarks').value = paper.totalMarks;
             document.querySelector('#paperForm button[type="submit"]').textContent = 'Update Paper';
             this.currentEditingPaper = id;
             this.showAddPaperForm();
+            // Set editor content after init
+            setTimeout(() => {
+                if (typeof tinymce !== 'undefined' && tinymce.get('paperEditor')) {
+                    const content = paper.content || (paper.questions ? paper.questions.map(q => `<p>${q.trim()}</p>`).join('') : '');
+                    tinymce.get('paperEditor').setContent(content);
+                }
+            }, 500);
         }
     }
 
@@ -1273,7 +1315,7 @@ class SchoolManagementSystem {
                         <th>Class</th>
                         <th>Subject</th>
                         <th>Type</th>
-                        <th>Questions</th>
+                        <th>Content</th>
                         <th>Duration</th>
                         <th>Total Marks</th>
                         <th>Created</th>
@@ -1287,7 +1329,7 @@ class SchoolManagementSystem {
                             <td>${paper.class}</td>
                             <td>${paper.subject}</td>
                             <td><span class="type-badge">${paper.type}</span></td>
-                            <td>${paper.questions.length}</td>
+                            <td>Rich Text</td>
                             <td>${paper.duration} min</td>
                             <td>${paper.totalMarks}</td>
                             <td>${paper.createdDate}</td>
@@ -1312,7 +1354,36 @@ class SchoolManagementSystem {
     viewPaper(id) {
         const paper = this.questionPapers.find(p => p.id === id);
         if (paper) {
-            alert(`Paper: ${paper.title}\nClass: ${paper.class}\nSubject: ${paper.subject}\nType: ${paper.type}\nDuration: ${paper.duration} min\nTotal Marks: ${paper.totalMarks}\n\nQuestions:\n${paper.questions.join('\n')}`);
+            const content = paper.content || (paper.questions ? paper.questions.join('\n') : 'No content');
+            const newWindow = window.open('', '_blank', 'width=800,height=600');
+            newWindow.document.write(`
+                <html>
+                    <head>
+                        <title>${paper.title}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                            h1, h2, h3 { color: #333; }
+                            .header { margin-bottom: 20px; }
+                            .info { display: flex; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; }
+                            .info div { margin: 5px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>${paper.title}</h1>
+                            <div class="info">
+                                <div><strong>Class:</strong> ${paper.class}</div>
+                                <div><strong>Subject:</strong> ${paper.subject}</div>
+                                <div><strong>Type:</strong> ${paper.type}</div>
+                                <div><strong>Duration:</strong> ${paper.duration} min</div>
+                                <div><strong>Total Marks:</strong> ${paper.totalMarks}</div>
+                            </div>
+                        </div>
+                        <div class="content">${content}</div>
+                    </body>
+                </html>
+            `);
+            newWindow.document.close();
         }
     }
 
