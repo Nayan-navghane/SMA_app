@@ -1203,7 +1203,6 @@ class SchoolManagementSystem {
             title: document.getElementById('paperTitle').value,
             class: document.getElementById('paperClass').value,
             subject: document.getElementById('paperSubject').value,
-            type: document.getElementById('paperType').value,
             content: content,
             duration: parseInt(document.getElementById('paperDuration').value),
             totalMarks: parseInt(document.getElementById('paperTotalMarks').value),
@@ -1213,7 +1212,7 @@ class SchoolManagementSystem {
         localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
         this.loadExams();
         this.hideAddPaperForm();
-        this.addActivity(`New ${paper.type} paper "${paper.title}" created for ${paper.class} ${paper.subject}`);
+        this.addActivity(`New paper "${paper.title}" created for ${paper.class} ${paper.subject}`);
         alert('Paper created successfully!');
     }
 
@@ -1228,7 +1227,6 @@ class SchoolManagementSystem {
             paper.title = document.getElementById('paperTitle').value;
             paper.class = document.getElementById('paperClass').value;
             paper.subject = document.getElementById('paperSubject').value;
-            paper.type = document.getElementById('paperType').value;
             paper.content = content;
             paper.duration = parseInt(document.getElementById('paperDuration').value);
             paper.totalMarks = parseInt(document.getElementById('paperTotalMarks').value);
@@ -1248,7 +1246,6 @@ class SchoolManagementSystem {
             document.getElementById('paperTitle').value = paper.title;
             document.getElementById('paperClass').value = paper.class;
             document.getElementById('paperSubject').value = paper.subject;
-            document.getElementById('paperType').value = paper.type;
             document.getElementById('paperDuration').value = paper.duration;
             document.getElementById('paperTotalMarks').value = paper.totalMarks;
             document.querySelector('#paperForm button[type="submit"]').textContent = 'Update Paper';
@@ -1290,9 +1287,7 @@ class SchoolManagementSystem {
             filteredPapers = filteredPapers.filter(p => p.subject === subjectFilter.value);
         }
 
-        if (typeFilter && typeFilter.value) {
-            filteredPapers = filteredPapers.filter(p => p.type === typeFilter.value);
-        }
+        // Type filter removed as per user request
 
         if (searchTerm && searchTerm.value) {
             const term = searchTerm.value.toLowerCase();

@@ -440,10 +440,8 @@
                     <select id="paperSubjectFilter">
                         <option value="">All Subjects</option>
                     </select>
-                    <select id="paperTypeFilter">
+                    <select id="paperTypeFilter" style="display: none;">
                         <option value="">All Types</option>
-                        <option value="exam">Exam</option>
-                        <option value="assignment">Assignment</option>
                     </select>
                 </div>
                 <div class="form-container" id="addPaperFormContainer" style="display: none;">
@@ -465,13 +463,7 @@
                                     <option value="">Select Subject</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label for="paperType">Type</label>
-                                <select id="paperType" required>
-                                    <option value="exam">Exam</option>
-                                    <option value="assignment">Assignment</option>
-                                </select>
-                            </div>
+                            <!-- Type select removed as per user request -->
                             <div class="form-group">
                                 <label for="paperEditor">Exam Content</label>
                                 <div id="paperEditor" style="border: 1px solid #ddd; min-height: 300px;"></div>
