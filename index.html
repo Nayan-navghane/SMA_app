@@ -186,35 +186,153 @@
 
             <!-- Staff Section -->
             <div id="staff" class="section">
-                <h2>Staff Management</h2>
+                <h2>Staff Register</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="schoolSystem.showAddStaffForm()">Add New Staff</button>
+                </div>
                 <div class="filters">
+                    <input type="text" id="staffSearch" placeholder="Search by name or role...">
                     <select id="departmentFilter">
                         <option value="">All Departments</option>
+                        <option value="Administration">Administration</option>
+                        <option value="Teaching">Teaching</option>
+                        <option value="Support">Support</option>
+                        <option value="Maintenance">Maintenance</option>
+                    </select>
+                    <select id="staffRoleFilter">
+                        <option value="">All Roles</option>
                     </select>
                 </div>
+                <div class="form-container" id="addStaffFormContainer" style="display: none;">
+                    <form id="staffForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="staffName">Name</label>
+                                <input type="text" id="staffName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="staffDepartment">Department</label>
+                                <select id="staffDepartment" required>
+                                    <option value="">Select Department</option>
+                                    <option value="Administration">Administration</option>
+                                    <option value="Teaching">Teaching</option>
+                                    <option value="Support">Support</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="staffRole">Role</label>
+                                <input type="text" id="staffRole" required placeholder="e.g., Principal, Clerk">
+                            </div>
+                            <div class="form-group">
+                                <label for="staffContact">Contact</label>
+                                <input type="tel" id="staffContact" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="staffSalary">Salary</label>
+                                <input type="number" id="staffSalary" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="staffJoinDate">Join Date</label>
+                                <input type="date" id="staffJoinDate" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Staff</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddStaffForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
                 <div id="staffList">
-                    <p>Loading staff...</p>
+                    <p>No staff records. Add your first staff member!</p>
                 </div>
             </div>
 
             <!-- Admissions Section -->
             <div id="admissions" class="section">
-                <h2>Admissions</h2>
+                <h2>New Admissions</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="schoolSystem.showAddAdmissionForm()">New Admission Application</button>
+                </div>
                 <div class="filters">
+                    <input type="text" id="admissionSearch" placeholder="Search by name or application ID...">
                     <select id="admissionStatus">
                         <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <select id="admissionClassFilter">
+                        <option value="">All Classes</option>
                     </select>
                 </div>
-                <div class="form-container">
+                <div class="form-container" id="addAdmissionFormContainer" style="display: none;">
                     <form id="admissionForm">
-                        <!-- Admission form fields -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="applicationId">Application ID</label>
+                                <input type="text" id="applicationId" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="applicantName">Student Name</label>
+                                <input type="text" id="applicantName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dob">Date of Birth</label>
+                                <input type="date" id="dob" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="applyingClass">Applying For Class</label>
+                                <select id="applyingClass" required>
+                                    <option value="">Select Class</option>
+                                    <option value="KG">KG</option>
+                                    <option value="1">Class 1</option>
+                                    <option value="2">Class 2</option>
+                                    <option value="3">Class 3</option>
+                                    <option value="4">Class 4</option>
+                                    <option value="5">Class 5</option>
+                                    <option value="6">Class 6</option>
+                                    <option value="7">Class 7</option>
+                                    <option value="8">Class 8</option>
+                                    <option value="9">Class 9</option>
+                                    <option value="10">Class 10</option>
+                                    <option value="11">Class 11</option>
+                                    <option value="12">Class 12</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="parentNameAdmission">Parent/Guardian Name</label>
+                                <input type="text" id="parentNameAdmission" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="parentContact">Parent Contact</label>
+                                <input type="tel" id="parentContact" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="address">Address</label>
+                                <textarea id="address" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="previousSchool">Previous School</label>
+                                <input type="text" id="previousSchool">
+                            </div>
+                            <div class="form-group">
+                                <label for="documents">Documents Status</label>
+                                <select id="documents">
+                                    <option value="complete">Complete</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="incomplete">Incomplete</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Submit Admission</button>
+                            <button type="submit" class="btn btn-primary">Submit Application</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddAdmissionForm()">Cancel</button>
                         </div>
                     </form>
                 </div>
                 <div id="admissionsList">
-                    <p>Loading admissions...</p>
+                    <p>No admissions found. Submit your first application!</p>
                 </div>
             </div>
 
@@ -228,17 +346,152 @@
 
             <!-- Schedule Section -->
             <div id="schedule" class="section">
-                <h2>Class Schedule</h2>
+                <h2>Class Schedule Management</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="schoolSystem.showAddScheduleForm()">Add New Schedule</button>
+                </div>
+                <div class="filters">
+                    <select id="scheduleClassFilter">
+                        <option value="">All Classes</option>
+                    </select>
+                    <select id="scheduleDayFilter">
+                        <option value="">All Days</option>
+                        <option value="monday">Monday</option>
+                        <option value="tuesday">Tuesday</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="thursday">Thursday</option>
+                        <option value="friday">Friday</option>
+                        <option value="saturday">Saturday</option>
+                    </select>
+                </div>
+                <div class="form-container" id="addScheduleFormContainer" style="display: none;">
+                    <form id="scheduleForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="scheduleClass">Class</label>
+                                <select id="scheduleClass" required>
+                                    <option value="">Select Class</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="scheduleDay">Day</label>
+                                <select id="scheduleDay" required>
+                                    <option value="">Select Day</option>
+                                    <option value="monday">Monday</option>
+                                    <option value="tuesday">Tuesday</option>
+                                    <option value="wednesday">Wednesday</option>
+                                    <option value="thursday">Thursday</option>
+                                    <option value="friday">Friday</option>
+                                    <option value="saturday">Saturday</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="schedulePeriod">Period</label>
+                                <select id="schedulePeriod" required>
+                                    <option value="">Select Period</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="scheduleSubject">Subject</label>
+                                <select id="scheduleSubject" required>
+                                    <option value="">Select Subject</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="scheduleTeacher">Teacher</label>
+                                <select id="scheduleTeacher" required>
+                                    <option value="">Select Teacher</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="scheduleTime">Time</label>
+                                <input type="time" id="scheduleTime" required>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Schedule</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddScheduleForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
                 <div id="scheduleList">
-                    <p>Loading schedule...</p>
+                    <p>No schedule entries. Add your first schedule!</p>
                 </div>
             </div>
 
             <!-- Exams Section -->
             <div id="exams" class="section">
-                <h2>Exams</h2>
+                <h2>Paper Creation & Exam Management</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="schoolSystem.showAddPaperForm()">Create New Paper</button>
+                </div>
+                <div class="filters">
+                    <input type="text" id="paperSearch" placeholder="Search by title or subject...">
+                    <select id="paperClassFilter">
+                        <option value="">All Classes</option>
+                    </select>
+                    <select id="paperSubjectFilter">
+                        <option value="">All Subjects</option>
+                    </select>
+                    <select id="paperTypeFilter">
+                        <option value="">All Types</option>
+                        <option value="exam">Exam</option>
+                        <option value="assignment">Assignment</option>
+                    </select>
+                </div>
+                <div class="form-container" id="addPaperFormContainer" style="display: none;">
+                    <form id="paperForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="paperTitle">Paper Title</label>
+                                <input type="text" id="paperTitle" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="paperClass">Class</label>
+                                <select id="paperClass" required>
+                                    <option value="">Select Class</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paperSubject">Subject</label>
+                                <select id="paperSubject" required>
+                                    <option value="">Select Subject</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paperType">Type</label>
+                                <select id="paperType" required>
+                                    <option value="exam">Exam</option>
+                                    <option value="assignment">Assignment</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paperQuestions">Questions (one per line)</label>
+                                <textarea id="paperQuestions" rows="10" placeholder="Enter questions, one per line..." required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="paperDuration">Duration (minutes)</label>
+                                <input type="number" id="paperDuration" min="30" value="60">
+                            </div>
+                            <div class="form-group">
+                                <label for="paperTotalMarks">Total Marks</label>
+                                <input type="number" id="paperTotalMarks" min="1" value="100">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Create Paper</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddPaperForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
                 <div id="examsList">
-                    <p>Loading exams...</p>
+                    <p>No papers created yet. Create your first paper!</p>
                 </div>
             </div>
 
