@@ -463,8 +463,11 @@
                                     <option value="">Select Subject</option>
                                 </select>
                             </div>
-                            <!-- Type select removed as per user request -->
-                            <div id="paperEditor" style="border: 1px solid #ddd; min-height: 300px;"></div>
+                            <div class="form-group">
+                                <label>Questions</label>
+                                <button type="button" class="btn btn-secondary" onclick="schoolSystem.addQuestion()">Add Question</button>
+                                <div id="questionsContainer"></div>
+                            </div>
                             <div class="form-group">
                                 <label for="paperDuration">Duration (minutes)</label>
                                 <input type="number" id="paperDuration" min="30" value="60">

@@ -1165,37 +1165,48 @@ class SchoolManagementSystem {
         document.getElementById('addPaperFormContainer').style.display = 'block';
         this.currentEditingPaper = null;
         document.querySelector('#paperForm button[type="submit"]').textContent = 'Create Paper';
-        // Initialize TinyMCE
-        if (typeof tinymce !== 'undefined') {
-            tinymce.init({
-                selector: '#paperEditor',
-                height: 300,
-                menubar: false,
-                plugins: [
-                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
-                    'preview', 'anchor', 'searchreplace', 'visualblocks',
-                    'code', 'fullscreen', 'insertdatetime', 'media', 'table',
-                    'help', 'wordcount'
-                ],
-                toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-            });
-        }
+        this.questions = [];
+        this.renderQuestions();
     }
 
     hideAddPaperForm() {
-        // Destroy TinyMCE to clean up
-        if (typeof tinymce !== 'undefined' && tinymce.get('paperEditor')) {
-            tinymce.get('paperEditor').remove();
-        }
         document.getElementById('addPaperFormContainer').style.display = 'none';
         this.clearForm('paperForm');
+        this.questions = [];
+        document.getElementById('questionsContainer').innerHTML = '';
+    }
+
+    renderQuestions() {
+        const container = document.getElementById('questionsContainer');
+        if (!container) return;
+        if (this.questions.length === 0) {
+            container.innerHTML = '<p class="no-data">No questions. Add your first question!</p>';
+            return;
+        }
+        const html = this.questions.map((q, index) => `
+            <div class="question-item" style="border: 1px solid #ddd; margin-bottom: 15px; padding: 10px;">
+                <h4>Question ${index + 1}</h4>
+                <textarea class="question-text" data-index="${index}" placeholder="Enter question text here..." rows="3">${q.text || ''}</textarea>
+                <button type="button" class="btn btn-sm btn-danger" onclick="schoolSystem.removeQuestion(${index})">Remove</button>
+            </div>
+        `).join('');
+        container.innerHTML = html;
+    }
+
+    addQuestion() {
+        this.questions.push({ text: '' });
+        this.renderQuestions();
+    }
+
+    removeQuestion(index) {
+        this.questions.splice(index, 1);
+        this.renderQuestions();
     }
 
     addPaper() {
-        const content = tinymce.get('paperEditor').getContent();
-        if (!content.trim()) {
-            alert('Please enter exam content.');
+        const questionTexts = this.questions.map(q => q.text).filter(text => text.trim());
+        if (questionTexts.length === 0) {
+            alert('Please add at least one question.');
             return;
         }
         const paper = {
@@ -1203,7 +1214,7 @@ class SchoolManagementSystem {
             title: document.getElementById('paperTitle').value,
             class: document.getElementById('paperClass').value,
             subject: document.getElementById('paperSubject').value,
-            content: content,
+            questions: questionTexts,
             duration: parseInt(document.getElementById('paperDuration').value),
             totalMarks: parseInt(document.getElementById('paperTotalMarks').value),
             createdDate: new Date().toISOString().split('T')[0]
@@ -1219,15 +1230,15 @@ class SchoolManagementSystem {
     updatePaper(id) {
         const paper = this.questionPapers.find(p => p.id === id);
         if (paper) {
-            const content = tinymce.get('paperEditor').getContent();
-            if (!content.trim()) {
-                alert('Please enter exam content.');
+            const questionTexts = this.questions.map(q => q.text).filter(text => text.trim());
+            if (questionTexts.length === 0) {
+                alert('Please add at least one question.');
                 return;
             }
             paper.title = document.getElementById('paperTitle').value;
             paper.class = document.getElementById('paperClass').value;
             paper.subject = document.getElementById('paperSubject').value;
-            paper.content = content;
+            paper.questions = questionTexts;
             paper.duration = parseInt(document.getElementById('paperDuration').value);
             paper.totalMarks = parseInt(document.getElementById('paperTotalMarks').value);
             localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
@@ -1250,14 +1261,9 @@ class SchoolManagementSystem {
             document.getElementById('paperTotalMarks').value = paper.totalMarks;
             document.querySelector('#paperForm button[type="submit"]').textContent = 'Update Paper';
             this.currentEditingPaper = id;
+            this.questions = paper.questions || [];
+            this.renderQuestions();
             this.showAddPaperForm();
-            // Set editor content after init
-            setTimeout(() => {
-                if (typeof tinymce !== 'undefined' && tinymce.get('paperEditor')) {
-                    const content = paper.content || (paper.questions ? paper.questions.map(q => `<p>${q.trim()}</p>`).join('') : '');
-                    tinymce.get('paperEditor').setContent(content);
-                }
-            }, 500);
         }
     }
 
@@ -1349,7 +1355,14 @@ class SchoolManagementSystem {
     viewPaper(id) {
         const paper = this.questionPapers.find(p => p.id === id);
         if (paper) {
-            const content = paper.content || (paper.questions ? paper.questions.join('\n') : 'No content');
+            let content = '';
+            if (paper.questions && paper.questions.length > 0) {
+                content = '<ol>' + paper.questions.map(q => `<li>${q}</li>`).join('') + '</ol>';
+            } else if (paper.content) {
+                content = paper.content;
+            } else {
+                content = 'No content';
+            }
             const newWindow = window.open('', '_blank', 'width=800,height=600');
             newWindow.document.write(`
                 <html>
@@ -1361,6 +1374,8 @@ class SchoolManagementSystem {
                             .header { margin-bottom: 20px; }
                             .info { display: flex; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; }
                             .info div { margin: 5px; }
+                            ol { padding-left: 20px; }
+                            li { margin-bottom: 10px; }
                         </style>
                     </head>
                     <body>
@@ -1369,7 +1384,6 @@ class SchoolManagementSystem {
                             <div class="info">
                                 <div><strong>Class:</strong> ${paper.class}</div>
                                 <div><strong>Subject:</strong> ${paper.subject}</div>
-                                <div><strong>Type:</strong> ${paper.type}</div>
                                 <div><strong>Duration:</strong> ${paper.duration} min</div>
                                 <div><strong>Total Marks:</strong> ${paper.totalMarks}</div>
                             </div>
