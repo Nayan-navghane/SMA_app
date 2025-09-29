@@ -1397,10 +1397,69 @@ class SchoolManagementSystem {
     }
 
     // Stub for loadFees
+    showAddFeeForm() {
+        document.getElementById('addFeeFormContainer').style.display = 'block';
+    }
+
+    hideAddFeeForm() {
+        document.getElementById('addFeeFormContainer').style.display = 'none';
+        this.clearForm('feeForm');
+    }
+
+    addFeeStructure() {
+        const fee = {
+            id: Date.now(),
+            class: document.getElementById('feeClass').value,
+            amount: parseFloat(document.getElementById('feeAmount').value),
+            dueDate: document.getElementById('feeDueDate').value,
+            status: document.getElementById('feeStatus').value
+        };
+        this.feeStructures.push(fee);
+        localStorage.setItem('feeStructures', JSON.stringify(this.feeStructures));
+        this.loadFees();
+        this.hideAddFeeForm();
+        alert('Fee structure added successfully!');
+    }
+
     loadFees() {
         const feesList = document.getElementById('feesList');
         if (!feesList) return;
-        feesList.innerHTML = '<p>Fees data loading...</p>';
+        if (this.feeStructures.length === 0) {
+            feesList.innerHTML = '<p>No fee structures added yet. Add your first fee structure!</p>';
+            return;
+        }
+        const html = this.feeStructures.map(fee => `
+            <tr>
+                <td>${fee.class}</td>
+                <td>$${fee.amount}</td>
+                <td>${fee.dueDate}</td>
+                <td><span class="status-badge status-${fee.status}">${fee.status}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="schoolSystem.editFee(${fee.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteFee(${fee.id})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        feesList.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${html}
+                </tbody>
+            </table>
+        `;
     }
 
     // Stub for loadSalaries
