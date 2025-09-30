@@ -327,14 +327,27 @@ class SchoolManagementSystem {
         this.clearForm('studentForm');
     }
 
-    addStudent() {
+    async addStudent() {
+        const photoFile = document.getElementById('photo').files[0];
+        let photoBase64 = null;
+        if (photoFile) {
+            photoBase64 = await this.readFileAsBase64(photoFile);
+        }
+
         const student = {
             id: Date.now(),
             rollNo: document.getElementById('rollNo').value,
             name: document.getElementById('studentName').value,
             class: document.getElementById('studentClass').value,
+            section: document.getElementById('section').value || '',
+            dob: document.getElementById('dob').value,
+            photo: photoBase64,
             parentName: document.getElementById('parentName').value,
-            contact: document.getElementById('contact').value
+            parentContact: document.getElementById('parentContact').value,
+            address: document.getElementById('address').value,
+            aadhar: document.getElementById('aadhar').value,
+            bloodGroup: document.getElementById('bloodGroup').value,
+            emergencyContact: document.getElementById('emergencyContact').value
         };
         this.students.push(student);
         localStorage.setItem('students', JSON.stringify(this.students));
@@ -345,14 +358,36 @@ class SchoolManagementSystem {
         alert('Student added successfully!');
     }
 
-    updateStudent(id) {
+    readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    async updateStudent(id) {
+        const photoFile = document.getElementById('photo').files[0];
+        let photoBase64 = null;
+        if (photoFile) {
+            photoBase64 = await this.readFileAsBase64(photoFile);
+        }
+
         const student = this.students.find(s => s.id === id);
         if (student) {
             student.rollNo = document.getElementById('rollNo').value;
             student.name = document.getElementById('studentName').value;
             student.class = document.getElementById('studentClass').value;
+            student.section = document.getElementById('section').value || '';
+            student.dob = document.getElementById('dob').value;
+            if (photoBase64) student.photo = photoBase64;
             student.parentName = document.getElementById('parentName').value;
-            student.contact = document.getElementById('contact').value;
+            student.parentContact = document.getElementById('parentContact').value;
+            student.address = document.getElementById('address').value;
+            student.aadhar = document.getElementById('aadhar').value;
+            student.bloodGroup = document.getElementById('bloodGroup').value;
+            student.emergencyContact = document.getElementById('emergencyContact').value;
             localStorage.setItem('students', JSON.stringify(this.students));
             this.loadStudents();
             this.loadDashboardData();
@@ -370,8 +405,25 @@ class SchoolManagementSystem {
             document.getElementById('rollNo').value = student.rollNo;
             document.getElementById('studentName').value = student.name;
             document.getElementById('studentClass').value = student.class;
+            document.getElementById('section').value = student.section || '';
+            document.getElementById('dob').value = student.dob || '';
             document.getElementById('parentName').value = student.parentName;
-            document.getElementById('contact').value = student.contact;
+            document.getElementById('parentContact').value = student.parentContact || student.contact || '';
+            document.getElementById('address').value = student.address || '';
+            document.getElementById('aadhar').value = student.aadhar || '';
+            document.getElementById('bloodGroup').value = student.bloodGroup || '';
+            document.getElementById('emergencyContact').value = student.emergencyContact || '';
+            // For photo, show preview if exists
+            if (student.photo) {
+                const img = document.createElement('img');
+                img.src = student.photo;
+                img.style.width = '100px';
+                img.style.height = '100px';
+                img.style.display = 'block';
+                img.style.marginTop = '5px';
+                const photoInput = document.getElementById('photo');
+                photoInput.parentNode.appendChild(img);
+            }
             document.querySelector('#studentForm button[type="submit"]').textContent = 'Update Student';
             this.currentEditingStudent = id;
             this.showAddStudentForm();
@@ -419,8 +471,9 @@ class SchoolManagementSystem {
                         <th>Roll No</th>
                         <th>Name</th>
                         <th>Class</th>
-                        <th>Parent</th>
-                        <th>Contact</th>
+                        <th>Section</th>
+                        <th>DOB</th>
+                        <th>Blood Group</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -430,8 +483,9 @@ class SchoolManagementSystem {
                             <td>${student.rollNo}</td>
                             <td>${student.name}</td>
                             <td>${student.class}</td>
-                            <td>${student.parentName}</td>
-                            <td>${student.contact}</td>
+                            <td>${student.section}</td>
+                            <td>${student.dob}</td>
+                            <td>${student.bloodGroup}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" onclick="schoolSystem.editStudent(${student.id})">
                                     <i class="fas fa-edit"></i> Edit
@@ -439,12 +493,52 @@ class SchoolManagementSystem {
                                 <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteStudent(${student.id})">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
+                                <button class="btn btn-sm btn-success" onclick="schoolSystem.generateIDCard(${student.id})">
+                                    <i class="fas fa-id-card"></i> ID Card
+                                </button>
                             </td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         `;
+    }
+
+    generateIDCard(id) {
+        const student = this.students.find(s => s.id === id);
+        if (!student) {
+            alert('Student not found!');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ size: [252, 396] }); // ID card size
+
+        // School info from settings
+        const schoolName = this.settings.schoolInfo.name || 'School Management System';
+        doc.setFontSize(16).text(schoolName, 20, 20);
+
+        // Student photo if available
+        if (student.photo) {
+            doc.addImage(student.photo, 'JPEG', 150, 20, 80, 100);
+        } else {
+            doc.rect(150, 20, 80, 100).stroke();
+            doc.text('Photo', 170, 60);
+        }
+
+        doc.setFontSize(12).text(`Name: ${student.name}`, 20, 140);
+        doc.text(`Class: ${student.class} - ${student.section}`, 20, 155);
+        doc.text(`Roll No: ${student.rollNo}`, 20, 170);
+        doc.text(`DOB: ${student.dob}`, 20, 185);
+        doc.text(`Blood Group: ${student.bloodGroup}`, 20, 200);
+        doc.text(`Emergency Contact: ${student.emergencyContact}`, 20, 215);
+        doc.text(`Parent: ${student.parentName}`, 20, 230);
+        doc.text(`Contact: ${student.parentContact}`, 20, 245);
+
+        // ID
+        doc.text(`Student ID: ${student.id}`, 20, 280);
+
+        doc.save(`id-card-${student.rollNo}.pdf`);
     }
 
     showAddTeacherForm() {
@@ -458,13 +552,22 @@ class SchoolManagementSystem {
         this.clearForm('teacherForm');
     }
 
-    addTeacher() {
+    async addTeacher() {
+        const photoFile = document.getElementById('teacherPhoto').files[0];
+        let photoBase64 = null;
+        if (photoFile) {
+            photoBase64 = await this.readFileAsBase64(photoFile);
+        }
+
         const teacher = {
             id: Date.now(),
             name: document.getElementById('teacherName').value,
             subject: document.getElementById('subject').value,
-            experience: document.getElementById('experience').value,
+            photo: photoBase64,
             contact: document.getElementById('teacherContact').value,
+            joiningDate: document.getElementById('joiningDate').value,
+            salary: parseFloat(document.getElementById('salary').value),
+            experience: document.getElementById('experience').value,
             qualification: document.getElementById('qualification').value
         };
         this.teachers.push(teacher);
@@ -476,13 +579,22 @@ class SchoolManagementSystem {
         alert('Teacher added successfully!');
     }
 
-    updateTeacher(id) {
+    async updateTeacher(id) {
+        const photoFile = document.getElementById('teacherPhoto').files[0];
+        let photoBase64 = null;
+        if (photoFile) {
+            photoBase64 = await this.readFileAsBase64(photoFile);
+        }
+
         const teacher = this.teachers.find(t => t.id === id);
         if (teacher) {
             teacher.name = document.getElementById('teacherName').value;
             teacher.subject = document.getElementById('subject').value;
-            teacher.experience = document.getElementById('experience').value;
+            if (photoBase64) teacher.photo = photoBase64;
             teacher.contact = document.getElementById('teacherContact').value;
+            teacher.joiningDate = document.getElementById('joiningDate').value;
+            teacher.salary = parseFloat(document.getElementById('salary').value);
+            teacher.experience = document.getElementById('experience').value;
             teacher.qualification = document.getElementById('qualification').value;
             localStorage.setItem('teachers', JSON.stringify(this.teachers));
             this.loadTeachers();
@@ -549,9 +661,9 @@ class SchoolManagementSystem {
                     <tr>
                         <th>Name</th>
                         <th>Subject</th>
-                        <th>Experience</th>
+                        <th>Joining Date</th>
+                        <th>Salary</th>
                         <th>Contact</th>
-                        <th>Qualification</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -560,9 +672,9 @@ class SchoolManagementSystem {
                         <tr>
                             <td>${teacher.name}</td>
                             <td>${teacher.subject}</td>
-                            <td>${teacher.experience}</td>
+                            <td>${teacher.joiningDate}</td>
+                            <td>$${teacher.salary}</td>
                             <td>${teacher.contact}</td>
-                            <td>${teacher.qualification}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" onclick="schoolSystem.editTeacher(${teacher.id})">
                                     <i class="fas fa-edit"></i> Edit
