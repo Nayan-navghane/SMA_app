@@ -1867,275 +1867,292 @@ class SchoolManagementSystem {
         // Load other settings...
     }
 
-    // Basic form handler
-    handleFormSubmit(form) {
-        const formId = form.id;
-        if (formId === 'studentForm') {
-            if (this.currentEditingStudent) {
-                this.updateStudent(this.currentEditingStudent);
-            } else {
-                this.addStudent();
-            }
-        } else if (formId === 'teacherForm') {
-            if (this.currentEditingTeacher) {
-                this.updateTeacher(this.currentEditingTeacher);
-            } else {
-                this.addTeacher();
-            }
-        } else if (formId === 'staffForm') {
-            if (this.currentEditingStaff) {
-                this.updateStaff(this.currentEditingStaff);
-            } else {
-                this.addStaff();
-            }
-        } else if (formId === 'attendanceForm') {
-            this.saveAttendance();
-        } else if (formId === 'scheduleForm') {
-            if (this.currentEditingSchedule) {
-                this.updateSchedule(this.currentEditingSchedule);
-            } else {
-                this.addSchedule();
-            }
-        } else if (formId === 'paperForm') {
-            if (this.currentEditingPaper) {
-                this.updatePaper(this.currentEditingPaper);
-            } else {
-                this.addPaper();
-            }
-        } else if (formId === 'reportForm') {
-            this.generateReportCard();
-        } else if (formId === 'salaryForm') {
-            this.addSalary();
-        } else if (formId === 'admissionForm') {
-            if (this.currentEditingAdmission) {
-                this.updateAdmission(this.currentEditingAdmission);
-            } else {
-                this.addAdmission();
-            }
-        } else if (formId === 'schoolInfoForm') {
-            this.saveSchoolInfo();
-        } else if (formId === 'systemPrefsForm') {
-            this.saveSystemPreferences();
-        } else if (formId === 'securityForm') {
-            this.saveSecuritySettings();
-        }
-    }
-
-    // Student methods
-    addStudent() {
-        const student = {
-            id: Date.now(),
-            rollNo: document.getElementById('rollNo').value,
-            name: document.getElementById('studentName').value,
-            class: document.getElementById('studentClass').value,
-            parentName: document.getElementById('parentName').value,
-            contact: document.getElementById('contact').value
-        };
-        this.students.push(student);
-        localStorage.setItem('students', JSON.stringify(this.students));
-        this.loadStudents();
-        this.loadDashboardData();
-        this.clearForm('studentForm');
-        alert('Student added successfully!');
-    }
-
-    editStudent(id) {
-        const student = this.students.find(s => s.id === id);
-        if (student) {
-            // Populate form for editing
-            document.getElementById('rollNo').value = student.rollNo;
-            document.getElementById('studentName').value = student.name;
-            document.getElementById('studentClass').value = student.class;
-            document.getElementById('parentName').value = student.parentName;
-            document.getElementById('contact').value = student.contact;
-            // Change submit to update
-            document.querySelector('#studentForm button[type="submit"]').textContent = 'Update Student';
-        }
-    }
-
-    deleteStudent(id) {
-        if (confirm('Are you sure?')) {
-            this.students = this.students.filter(s => s.id !== id);
-            localStorage.setItem('students', JSON.stringify(this.students));
-            this.loadStudents();
-            this.loadDashboardData();
-        }
-    }
-
-    // Teacher methods
-    addTeacher() {
-        const teacher = {
-            id: Date.now(),
-            name: document.getElementById('teacherName').value,
-            subject: document.getElementById('subject').value,
-            experience: document.getElementById('experience').value,
-            contact: document.getElementById('teacherContact').value,
-            qualification: document.getElementById('qualification').value
-        };
-        this.teachers.push(teacher);
-        localStorage.setItem('teachers', JSON.stringify(this.teachers));
-        this.loadTeachers();
-        this.loadDashboardData();
-        this.clearForm('teacherForm');
-        alert('Teacher added successfully!');
-    }
-
-    editTeacher(id) {
-        const teacher = this.teachers.find(t => t.id === id);
-        if (teacher) {
-            document.getElementById('teacherName').value = teacher.name;
-            document.getElementById('subject').value = teacher.subject;
-            document.getElementById('experience').value = teacher.experience;
-            document.getElementById('teacherContact').value = teacher.contact;
-            document.getElementById('qualification').value = teacher.qualification;
-            document.querySelector('#teacherForm button[type="submit"]').textContent = 'Update Teacher';
-        }
-    }
-
-    deleteTeacher(id) {
-        if (confirm('Are you sure?')) {
-            this.teachers = this.teachers.filter(t => t.id !== id);
-            localStorage.setItem('teachers', JSON.stringify(this.teachers));
-            this.loadTeachers();
-            this.loadDashboardData();
-        }
-    }
-
-    // Stub for other add methods
-    addSalary() {
-        alert('Salary added (stub)');
-    }
-
-    addAdmission() {
-        alert('Admission submitted (stub)');
-    }
-
-    // Settings methods
-    saveSchoolInfo() {
-        this.settings.schoolInfo.name = document.getElementById('schoolName').value;
-        this.settings.schoolInfo.code = document.getElementById('schoolCode').value;
-        this.settings.schoolInfo.address = document.getElementById('address').value;
-        this.settings.schoolInfo.phone = document.getElementById('phone').value;
-        this.settings.schoolInfo.email = document.getElementById('email').value;
-        this.settings.schoolInfo.website = document.getElementById('website').value;
-        localStorage.setItem('settings', JSON.stringify(this.settings));
-        alert('School info saved!');
-    }
-
-    saveSystemPreferences() {
-        this.settings.preferences.theme = document.getElementById('theme').value;
-        this.settings.preferences.language = document.getElementById('language').value;
-        this.settings.preferences.notifications = document.getElementById('notifications').checked;
-        localStorage.setItem('settings', JSON.stringify(this.settings));
-        this.applyTheme(this.settings.preferences.theme);
-        alert('Preferences saved!');
-    }
-
-    saveSecuritySettings() {
-        this.settings.security.sessionTimeout = document.getElementById('sessionTimeout').checked;
-        localStorage.setItem('settings', JSON.stringify(this.settings));
-        alert('Security settings saved!');
-    }
-
-    // Utility methods
-    clearForm(formId) {
-        document.getElementById(formId).reset();
-        // Reset submit button text if needed
-        if (formId === 'studentForm') {
-            document.querySelector('#studentForm button[type="submit"]').textContent = 'Add Student';
-        } else if (formId === 'teacherForm') {
-            document.querySelector('#teacherForm button[type="submit"]').textContent = 'Add Teacher';
-        } else if (formId === 'staffForm') {
-            document.querySelector('#staffForm button[type="submit"]').textContent = 'Add Staff';
-        } else if (formId === 'attendanceForm') {
-            document.querySelector('#attendanceForm button[type="submit"]').textContent = 'Save Attendance';
-            document.getElementById('studentsAttendanceList').innerHTML = '<p>Select class to load students</p>';
-        } else if (formId === 'scheduleForm') {
-            document.querySelector('#scheduleForm button[type="submit"]').textContent = 'Add Schedule';
-        } else if (formId === 'admissionForm') {
-            document.querySelector('#admissionForm button[type="submit"]').textContent = 'Submit Application';
-        } else if (formId === 'paperForm') {
-            document.querySelector('#paperForm button[type="submit"]').textContent = 'Create Paper';
-        } else if (formId === 'reportForm') {
-            document.querySelector('#reportForm button[type="submit"]').textContent = 'Generate Report Card';
-        }
-    }
-
-    closeModal() {
-        document.getElementById('editModal').style.display = 'none';
-    }
-
-    applyTheme(theme) {
-        document.body.className = theme;
-        // Add more theme logic if needed
-    }
-
-    // Dashboard data
-    loadDashboardData() {
-        document.getElementById('totalStudents').textContent = this.students.length;
-        document.getElementById('totalTeachers').textContent = this.teachers.length;
-        const pendingCount = this.admissions.filter(a => a.status === 'pending').length;
-        document.getElementById('pendingAdmissions').textContent = pendingCount || 0;
-        this.loadRecentActivities();
-    }
-
-    loadRecentActivities() {
-        const activitiesList = document.getElementById('recentActivities');
-        if (!activitiesList) return;
-
-        if (this.activities.length === 0) {
-            this.activities = [
-                { id: Date.now() - 7200000, action: 'New student added', user: 'Admin', time: '2 hours ago' },
-                { id: Date.now() - 86400000, action: 'Attendance marked for Class 10', user: 'Teacher Smith', time: '1 day ago' },
-                { id: Date.now() - 259200000, action: 'Fee payment received from John Doe', user: 'Parent', time: '3 days ago' }
-            ];
-            localStorage.setItem('activities', JSON.stringify(this.activities));
-        }
-
-        activitiesList.innerHTML = this.activities.slice(-5).map(activity => 
-            `<li class="activity-item">${activity.action} by ${activity.user} - ${activity.time}</li>`
-        ).join('') || '<li class="activity-item">No recent activities</li>';
-    }
-
-    addActivity(action) {
-        const now = new Date();
-        const timeAgo = this.getTimeAgo(now);
-        const activity = {
-            id: Date.now(),
-            action: action,
-            user: 'Admin',
-            time: timeAgo
-        };
-        this.activities.unshift(activity);
-        if (this.activities.length > 50) {
-            this.activities = this.activities.slice(0, 50);
-        }
-        localStorage.setItem('activities', JSON.stringify(this.activities));
-        this.loadRecentActivities();
-    }
-
-    getTimeAgo(date) {
-        const now = new Date();
-        const diffMs = now - date;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} min ago`;
-        if (diffHours < 24) return `${diffHours} hours ago`;
-        return `${diffDays} days ago`;
-    }
-
-    // Excel upload stub
-    handleExcelUpload(e) {
-        alert('Excel upload functionality requires additional libraries (e.g., SheetJS). Stub implemented.');
-    }
-
-    logout() {
-        localStorage.removeItem('loggedIn');
-        window.location.href = 'login.html';
-    }
+// Modal functions
+function openModal(modalId) {
+  document.getElementById(modalId).style.display = 'block';
 }
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+
+// Quick Actions Button Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Add Student Button
+  const addStudentBtn = document.querySelector('.quick-actions button:nth-child(1)'); // Adjust selector based on screenshot
+  if (addStudentBtn) {
+    addStudentBtn.addEventListener('click', () => openModal('studentModal'));
+  }
+
+  // New Admission Button
+  const newAdmissionBtn = document.querySelector('.quick-actions button:nth-child(2)');
+  if (newAdmissionBtn) {
+    newAdmissionBtn.addEventListener('click', () => openModal('admissionModal'));
+  }
+
+  // Mark Attendance Button
+  const markAttendanceBtn = document.querySelector('.quick-actions button:nth-child(3)');
+  if (markAttendanceBtn) {
+    markAttendanceBtn.addEventListener('click', () => openModal('attendanceModal'));
+  }
+});
+
+// File to base64 utility
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
+// Load students for attendance modal
+function loadStudentsForAttendance() {
+  const className = document.getElementById('attendanceClass').value;
+  if (!className) return;
+  // Fetch students for the class from API or localStorage
+  // For now, use localStorage example
+  const classStudents = this.students.filter(s => s.class === className);
+  const container = document.getElementById('studentsAttendanceList');
+  if (container) {
+    container.innerHTML = classStudents.map(student => `
+      <label class="attendance-item">
+        <input type="checkbox" name="student_${student.id}" value="${student.id}" checked>
+        ${student.name}
+      </label>
+    `).join('');
+  }
+}
+
+// Enhanced form handler with validation and API calls
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  const formId = e.target.id;
+
+  if (formId === 'studentForm') {
+    const formData = {
+      name: document.getElementById('studentName').value,
+      photo: document.getElementById('photo').files[0] ? await fileToBase64(document.getElementById('photo').files[0]) : null,
+      dob: document.getElementById('dob').value,
+      class: document.getElementById('studentClass').value,
+      section: document.getElementById('section').value,
+      parentName: document.getElementById('parentName').value,
+      parentContact: document.getElementById('parentContact').value,
+      address: document.getElementById('address').value,
+      aadhar: document.getElementById('aadhar').value,
+      bloodGroup: document.getElementById('bloodGroup').value,
+      emergencyContact: document.getElementById('emergencyContact').value
+    };
+
+    // Validation
+    if (!formData.name || !formData.dob || !formData.class || !formData.parentName || !formData.parentContact || !formData.address) {
+      alert('Please fill all required fields!');
+      return;
+    }
+
+    try {
+      // Save to backend API
+      const response = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (response.ok) {
+        alert('Student added successfully!');
+        closeModal('studentModal');
+        // Update UI
+        loadStudents();
+        loadDashboardData();
+      } else {
+        throw new Error('Failed to add student');
+      }
+    } catch (error) {
+      alert('Error adding student: ' + error.message);
+    }
+  } else if (formId === 'admissionForm') {
+    const formData = {
+      name: document.getElementById('applicantName').value,
+      dob: document.getElementById('admissionDob').value,
+      applyingClass: document.getElementById('applyingClass').value,
+      parentName: document.getElementById('parentNameAdmission').value,
+      parentContact: document.getElementById('parentContactAdmission').value,
+      address: document.getElementById('addressAdmission').value
+    };
+
+    if (!formData.name || !formData.dob || !formData.applyingClass || !formData.parentName || !formData.parentContact || !formData.address) {
+      alert('Please fill all required fields!');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (response.ok) {
+        alert('Admission submitted successfully!');
+        closeModal('admissionModal');
+        loadAdmissions();
+        loadDashboardData();
+      } else {
+        throw new Error('Failed to submit admission');
+      }
+    } catch (error) {
+      alert('Error submitting admission: ' + error.message);
+    }
+  } else if (formId === 'attendanceForm') {
+    const date = document.getElementById('attendanceDate').value;
+    const className = document.getElementById('attendanceClass').value;
+    if (!date || !className) {
+      alert('Please select date and class!');
+      return;
+    }
+
+    const attendanceData = {
+      date,
+      class: className,
+      students: Array.from(document.querySelectorAll('input[name^="student_"]:checked')).map(cb => ({
+        studentId: cb.value,
+        status: 'present'
+      }))
+    };
+
+    try {
+      const response = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(attendanceData)
+      });
+      if (response.ok) {
+        alert('Attendance marked successfully!');
+        closeModal('attendanceModal');
+        loadAttendance();
+        loadDashboardData();
+      } else {
+        throw new Error('Failed to mark attendance');
+      }
+    } catch (error) {
+      alert('Error marking attendance: ' + error.message);
+    }
+  }
+}
+
+// Load functions with API calls
+async function loadStudents() {
+  try {
+    const response = await fetch('/api/students');
+    const students = await response.json();
+    // Update table (assume #studentsTable exists)
+    const tbody = document.querySelector('#studentsTable tbody') || document.querySelector('#studentsList tbody');
+    if (tbody) {
+      tbody.innerHTML = students.map(student => `
+        <tr>
+          <td>${student.rollNo || student.id}</td>
+          <td>${student.name}</td>
+          <td>${student.class}</td>
+          <td>${student.section || ''}</td>
+          <td>${student.dob}</td>
+          <td>${student.bloodGroup || ''}</td>
+          <td>
+            <button onclick="schoolSystem.editStudent(${student.id})">Edit</button>
+            <button onclick="schoolSystem.deleteStudent(${student.id})">Delete</button>
+            <button onclick="schoolSystem.generateIDCard(${student.id})">ID Card</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error loading students:', error);
+  }
+}
+
+async function loadAdmissions() {
+  try {
+    const response = await fetch('/api/admissions');
+    const admissions = await response.json();
+    const tbody = document.querySelector('#admissionsTable tbody') || document.querySelector('#admissionsList tbody');
+    if (tbody) {
+      tbody.innerHTML = admissions.map(admission => `
+        <tr>
+          <td>${admission.applicationId}</td>
+          <td>${admission.name}</td>
+          <td>${admission.applyingClass}</td>
+          <td>${admission.status}</td>
+          <td>${admission.appliedDate}</td>
+          <td>
+            <button onclick="schoolSystem.editAdmission(${admission.id})">Edit</button>
+            <button onclick="schoolSystem.deleteAdmission(${admission.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error loading admissions:', error);
+  }
+}
+
+async function loadAttendance() {
+  try {
+    const response = await fetch('/api/attendance');
+    const attendance = await response.json();
+    const tbody = document.querySelector('#attendanceTable tbody') || document.querySelector('#attendanceList tbody');
+    if (tbody) {
+      tbody.innerHTML = attendance.map(record => `
+        <tr>
+          <td>${record.date}</td>
+          <td>${record.class}</td>
+          <td>${record.students ? record.students.length : 0} present</td>
+          <td>
+            <button onclick="viewAttendanceDetail(${record.id})">View</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error loading attendance:', error);
+  }
+}
+
+// Dashboard data load
+async function loadDashboardData() {
+  try {
+    // Total Students
+    const studentsRes = await fetch('/api/students/count');
+    const studentsData = await studentsRes.json();
+    document.getElementById('totalStudents').textContent = studentsData.count;
+
+    // Pending Admissions
+    const admissionsRes = await fetch('/api/admissions/pending');
+    const admissionsData = await admissionsRes.json();
+    document.getElementById('pendingAdmissions').textContent = admissionsData.count;
+
+    // Attendance Records (assume element exists)
+    const attendanceRes = await fetch('/api/attendance/count');
+    const attendanceData = await attendanceRes.json();
+    const attendanceEl = document.getElementById('totalAttendanceRecords') || document.querySelector('.attendance-count');
+    if (attendanceEl) attendanceEl.textContent = attendanceData.count;
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+  }
+}
+
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  loadStudents();
+  loadAdmissions();
+  loadAttendance();
+  loadDashboardData();
+});
 
 const schoolSystem = new SchoolManagementSystem();

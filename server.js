@@ -84,11 +84,13 @@ function initializeDatabase() {
         db.run(`CREATE TABLE IF NOT EXISTS fee_payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             student_id INTEGER,
+            fee_structure_id INTEGER,
             installment_amount REAL,
             payment_date DATE,
             mode TEXT,
             status TEXT DEFAULT 'pending',
             FOREIGN KEY (student_id) REFERENCES students (id),
+            FOREIGN KEY (fee_structure_id) REFERENCES fee_structures (id),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
 
@@ -322,9 +324,9 @@ app.post('/api/fee-structures', (req, res) => {
 
 // Fee payments
 app.post('/api/fee-payments', (req, res) => {
-    const { student_id, installment_amount, payment_date, mode, status } = req.body;
-    const stmt = db.prepare('INSERT INTO fee_payments (student_id, installment_amount, payment_date, mode, status) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(student_id, installment_amount, payment_date, mode, status, function(err) {
+    const { student_id, fee_structure_id, installment_amount, payment_date, mode, status } = req.body;
+    const stmt = db.prepare('INSERT INTO fee_payments (student_id, fee_structure_id, installment_amount, payment_date, mode, status) VALUES (?, ?, ?, ?, ?, ?)');
+    stmt.run(student_id, fee_structure_id, installment_amount, payment_date, mode, status, function(err) {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -337,20 +339,48 @@ app.post('/api/fee-payments', (req, res) => {
 // Track fees for student
 app.get('/api/fees/student/:studentId', (req, res) => {
     const studentId = req.params.studentId;
-    db.all(`
-        SELECT fs.*, fp.* FROM fee_structures fs 
-        LEFT JOIN fee_payments fp ON fs.id = fp.fee_structure_id 
-        WHERE fs.class = (SELECT class FROM students WHERE id = ?)
-    `, [studentId], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
+    
+    // Get student's class
+    db.get('SELECT class FROM students WHERE id = ?', [studentId], (err, student) => {
+        if (err || !student) {
+            res.status(404).json({ error: 'Student not found' });
             return;
         }
-        // Logic to calculate paid/pending/overdue
-        const totalFees = rows.reduce((sum, row) => sum + (row.amount || 0), 0);
-        const paid = rows.reduce((sum, row) => sum + (row.installment_amount || 0), 0);
-        const pending = totalFees - paid;
-        res.json({ totalFees, paid, pending, records: rows });
+        
+        const studentClass = student.class;
+        
+        // Get total fees for the class
+        db.get('SELECT SUM(amount) as totalFees FROM fee_structures WHERE class = ?', [studentClass], (err, totalResult) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            const totalFees = totalResult.totalFees || 0;
+            
+            // Get total paid by student
+            db.get('SELECT SUM(installment_amount) as paid FROM fee_payments WHERE student_id = ? AND status = "paid"', [studentId], (err, paidResult) => {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                const paid = paidResult.paid || 0;
+                const pending = totalFees - paid;
+                
+                // Get detailed records
+                db.all(`
+                    SELECT fs.*, fp.* 
+                    FROM fee_structures fs 
+                    LEFT JOIN fee_payments fp ON fs.id = fp.fee_structure_id AND fp.student_id = ?
+                    WHERE fs.class = ?
+                `, [studentId, studentClass], (err, rows) => {
+                    if (err) {
+                        res.status(500).json({ error: err.message });
+                        return;
+                    }
+                    res.json({ totalFees, paid, pending, records: rows });
+                });
+            });
+        });
     });
 });
 
