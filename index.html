@@ -38,10 +38,11 @@
 
         <div class="main-wrapper">
             <header class="top-header">
-                <div class="header-left">
-                <h1 class="school-title">School Management</h1>
-                <h2 class="page-title">Student Management</h2>
-                </div>
+    <div class="header-left">
+        <h1 class="school-title">School Management</h1>
+        <h2 class="page-title">Student Management</h2>
+        <button id="logoutBtn" style="float: right; padding: 5px 10px; background: #dc3545; color: white; border: none; cursor: pointer;">Logout</button>
+    </div>
                 <div class="header-right">
                     <div class="user-profile">
                         <i class="fas fa-user"></i>
@@ -721,5 +722,11 @@
         </main>
     </div>
     <script src="script.js"></script>
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('loggedIn');
+            window.location.href = 'login.html';
+        });
+    </script>
 </body>
 </html>
