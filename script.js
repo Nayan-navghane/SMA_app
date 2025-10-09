@@ -58,6 +58,16 @@ class SchoolManagementSystem {
             admissionForm.addEventListener('submit', (e) => this.handleAdmissionForm(e));
         }
 
+        const studentAttendanceForm = document.getElementById('studentAttendanceForm');
+        if (studentAttendanceForm) {
+            studentAttendanceForm.addEventListener('submit', (e) => this.handleStudentAttendanceForm(e));
+        }
+
+        const teacherAttendanceForm = document.getElementById('teacherAttendanceForm');
+        if (teacherAttendanceForm) {
+            teacherAttendanceForm.addEventListener('submit', (e) => this.handleTeacherAttendanceForm(e));
+        }
+
         // Theme toggle
         const themeSelect = document.getElementById('theme');
         if (themeSelect) {
@@ -337,6 +347,360 @@ class SchoolManagementSystem {
         localStorage.setItem('admissions', JSON.stringify(this.admissions));
         this.loadAdmissions();
         this.loadDashboardData();
+    }
+
+    showStudentAttendanceForm() {
+        document.getElementById('studentAttendanceFormContainer').style.display = 'block';
+        document.getElementById('attendanceDate').valueAsDate = new Date();
+    }
+
+    hideStudentAttendanceForm() {
+        document.getElementById('studentAttendanceFormContainer').style.display = 'none';
+    }
+
+    showTeacherAttendanceForm() {
+        document.getElementById('teacherAttendanceFormContainer').style.display = 'block';
+        document.getElementById('teacherAttendanceDate').valueAsDate = new Date();
+        this.loadTeachersForAttendance();
+    }
+
+    hideTeacherAttendanceForm() {
+        document.getElementById('teacherAttendanceFormContainer').style.display = 'none';
+    }
+
+    viewAttendanceReport() {
+        document.getElementById('attendanceReportContainer').style.display = 'block';
+        document.getElementById('reportStartDate').valueAsDate = new Date();
+        document.getElementById('reportEndDate').valueAsDate = new Date();
+    }
+
+    loadStudentsForAttendance() {
+        const classValue = document.getElementById('attendanceClass').value;
+        const sectionValue = document.getElementById('attendanceSection').value;
+
+        if (!classValue) {
+            document.getElementById('studentsAttendanceList').innerHTML = '<p class="no-data">Please select a class first</p>';
+            return;
+        }
+
+        const filteredStudents = this.students.filter(s => s.class === classValue && (!sectionValue || s.section === sectionValue));
+
+        if (filteredStudents.length === 0) {
+            document.getElementById('studentsAttendanceList').innerHTML = '<p class="no-data">No students found for selected class/section</p>';
+            return;
+        }
+
+        const date = document.getElementById('attendanceDate').value;
+        const dateKey = date || new Date().toISOString().split('T')[0];
+
+        document.getElementById('studentsAttendanceList').innerHTML = filteredStudents.map(s => {
+            const attendanceKey = `${s.id}_${dateKey}`;
+            const existingAttendance = this.attendance[attendanceKey];
+
+            return `
+                <div class="attendance-item">
+                    <div class="attendance-info">
+                        <strong>${s.name}</strong> (Roll: ${s.roll_no || s.rollNo})
+                    </div>
+                    <div class="attendance-options">
+                        <label>
+                            <input type="radio" name="attendance_${s.id}" value="present" ${existingAttendance === 'present' ? 'checked' : ''}>
+                            Present
+                        </label>
+                        <label>
+                            <input type="radio" name="attendance_${s.id}" value="absent" ${existingAttendance === 'absent' ? 'checked' : ''}>
+                            Absent
+                        </label>
+                        <label>
+                            <input type="radio" name="attendance_${s.id}" value="late" ${existingAttendance === 'late' ? 'checked' : ''}>
+                            Late
+                        </label>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    loadTeachersForAttendance() {
+        const subjectFilter = document.getElementById('teacherAttendanceSubject').value;
+
+        const filteredTeachers = subjectFilter
+            ? this.teachers.filter(t => t.subject === subjectFilter)
+            : this.teachers;
+
+        if (filteredTeachers.length === 0) {
+            document.getElementById('teachersAttendanceList').innerHTML = '<p class="no-data">No teachers found</p>';
+            return;
+        }
+
+        const date = document.getElementById('teacherAttendanceDate').value;
+        const dateKey = date || new Date().toISOString().split('T')[0];
+
+        document.getElementById('teachersAttendanceList').innerHTML = filteredTeachers.map(t => {
+            const attendanceKey = `teacher_${t.id}_${dateKey}`;
+            const existingAttendance = this.attendance[attendanceKey];
+
+            return `
+                <div class="attendance-item">
+                    <div class="attendance-info">
+                        <strong>${t.name}</strong> (${t.subject})
+                    </div>
+                    <div class="attendance-options">
+                        <label>
+                            <input type="radio" name="attendance_teacher_${t.id}" value="present" ${existingAttendance === 'present' ? 'checked' : ''}>
+                            Present
+                        </label>
+                        <label>
+                            <input type="radio" name="attendance_teacher_${t.id}" value="absent" ${existingAttendance === 'absent' ? 'checked' : ''}>
+                            Absent
+                        </label>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    handleStudentAttendanceForm(e) {
+        e.preventDefault();
+        const date = document.getElementById('attendanceDate').value;
+        const classValue = document.getElementById('attendanceClass').value;
+        const sectionValue = document.getElementById('attendanceSection').value;
+
+        if (!date || !classValue) {
+            alert('Please select date and class');
+            return;
+        }
+
+        const filteredStudents = this.students.filter(s => s.class === classValue && (!sectionValue || s.section === sectionValue));
+
+        filteredStudents.forEach(student => {
+            const attendanceValue = document.querySelector(`input[name="attendance_${student.id}"]:checked`)?.value;
+            if (attendanceValue) {
+                const attendanceKey = `${student.id}_${date}`;
+                this.attendance[attendanceKey] = attendanceValue;
+            }
+        });
+
+        localStorage.setItem('attendance', JSON.stringify(this.attendance));
+        alert('Student attendance saved successfully!');
+        this.updateAttendanceSummary();
+    }
+
+    handleTeacherAttendanceForm(e) {
+        e.preventDefault();
+        const date = document.getElementById('teacherAttendanceDate').value;
+
+        if (!date) {
+            alert('Please select date');
+            return;
+        }
+
+        this.teachers.forEach(teacher => {
+            const attendanceValue = document.querySelector(`input[name="attendance_teacher_${teacher.id}"]:checked`)?.value;
+            if (attendanceValue) {
+                const attendanceKey = `teacher_${teacher.id}_${date}`;
+                this.attendance[attendanceKey] = attendanceValue;
+            }
+        });
+
+        localStorage.setItem('attendance', JSON.stringify(this.attendance));
+        alert('Teacher attendance saved successfully!');
+        this.updateAttendanceSummary();
+    }
+
+    updateAttendanceSummary() {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Count today's student attendance
+        const todayStudentsPresent = Object.keys(this.attendance).filter(key =>
+            key.endsWith(`_${today}`) && !key.startsWith('teacher_') && this.attendance[key] === 'present'
+        ).length;
+
+        const todayStudentsAbsent = Object.keys(this.attendance).filter(key =>
+            key.endsWith(`_${today}`) && !key.startsWith('teacher_') && this.attendance[key] === 'absent'
+        ).length;
+
+        // Count today's teacher attendance
+        const todayTeachersPresent = Object.keys(this.attendance).filter(key =>
+            key.includes(`_${today}`) && key.startsWith('teacher_') && this.attendance[key] === 'present'
+        ).length;
+
+        const todayTeachersAbsent = Object.keys(this.attendance).filter(key =>
+            key.includes(`_${today}`) && key.startsWith('teacher_') && this.attendance[key] === 'absent'
+        ).length;
+
+        const totalStudents = this.students.length;
+        const totalTeachers = this.teachers.length;
+
+        document.getElementById('todayStudentAttendance').innerHTML = `
+            Present: ${todayStudentsPresent} | Absent: ${todayStudentsAbsent} | Total: ${totalStudents}
+        `;
+
+        document.getElementById('todayTeacherAttendance').innerHTML = `
+            Present: ${todayTeachersPresent} | Absent: ${todayTeachersAbsent} | Total: ${totalTeachers}
+        `;
+    }
+
+    generateAttendanceReport() {
+        const reportType = document.getElementById('reportType').value;
+        const startDate = document.getElementById('reportStartDate').value;
+        const endDate = document.getElementById('reportEndDate').value;
+        const classFilter = document.getElementById('reportClassFilter').value;
+
+        if (!startDate || !endDate) {
+            alert('Please select start and end dates');
+            return;
+        }
+
+        let reportData = [];
+
+        if (reportType === 'student') {
+            // Generate student attendance report
+            const filteredStudents = classFilter
+                ? this.students.filter(s => s.class === classFilter)
+                : this.students;
+
+            reportData = filteredStudents.map(student => {
+                const studentAttendance = {};
+                let totalPresent = 0;
+                let totalAbsent = 0;
+
+                // Check each date in range
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+
+                for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const attendanceKey = `${student.id}_${dateStr}`;
+                    const status = this.attendance[attendanceKey] || 'Not Marked';
+
+                    if (status === 'present') totalPresent++;
+                    else if (status === 'absent') totalAbsent++;
+
+                    studentAttendance[dateStr] = status;
+                }
+
+                return {
+                    name: student.name,
+                    class: student.class,
+                    attendance: studentAttendance,
+                    summary: { present: totalPresent, absent: totalAbsent }
+                };
+            });
+        } else {
+            // Generate teacher attendance report
+            const filteredTeachers = this.teachers;
+
+            reportData = filteredTeachers.map(teacher => {
+                const teacherAttendance = {};
+                let totalPresent = 0;
+                let totalAbsent = 0;
+
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+
+                for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const attendanceKey = `teacher_${teacher.id}_${dateStr}`;
+                    const status = this.attendance[attendanceKey] || 'Not Marked';
+
+                    if (status === 'present') totalPresent++;
+                    else if (status === 'absent') totalAbsent++;
+
+                    teacherAttendance[dateStr] = status;
+                }
+
+                return {
+                    name: teacher.name,
+                    subject: teacher.subject,
+                    attendance: teacherAttendance,
+                    summary: { present: totalPresent, absent: totalAbsent }
+                };
+            });
+        }
+
+        this.displayAttendanceReport(reportData, reportType, startDate, endDate);
+    }
+
+    displayAttendanceReport(data, type, startDate, endDate) {
+        if (data.length === 0) {
+            document.getElementById('attendanceReportList').innerHTML = '<p class="no-data">No data found for selected criteria</p>';
+            return;
+        }
+
+        let html = `
+            <h4>${type === 'student' ? 'Student' : 'Teacher'} Attendance Report</h4>
+            <p><strong>Period:</strong> ${startDate} to ${endDate}</p>
+            <div class="report-table-container">
+        `;
+
+        if (type === 'student') {
+            html += `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Present Days</th>
+                            <th>Absent Days</th>
+                            <th>Attendance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(item => {
+                const totalDays = item.summary.present + item.summary.absent;
+                const percentage = totalDays > 0 ? ((item.summary.present / totalDays) * 100).toFixed(1) : 0;
+
+                html += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.class}</td>
+                        <td>${item.summary.present}</td>
+                        <td>${item.summary.absent}</td>
+                        <td>${percentage}%</td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Subject</th>
+                            <th>Present Days</th>
+                            <th>Absent Days</th>
+                            <th>Attendance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(item => {
+                const totalDays = item.summary.present + item.summary.absent;
+                const percentage = totalDays > 0 ? ((item.summary.present / totalDays) * 100).toFixed(1) : 0;
+
+                html += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.subject}</td>
+                        <td>${item.summary.present}</td>
+                        <td>${item.summary.absent}</td>
+                        <td>${percentage}%</td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        document.getElementById('attendanceReportList').innerHTML = html;
     }
 
     applyTheme(theme) {
