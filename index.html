@@ -435,20 +435,20 @@
                     <form id="admissionForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="applicationId">Application ID</label>
-                                <input type="text" id="applicationId" required>
+                                <label for="application_id">Application ID</label>
+                                <input type="text" id="application_id" name="application_id" required>
                             </div>
                             <div class="form-group">
-                                <label for="applicantName">Student Name</label>
-                                <input type="text" id="applicantName" required>
+                                <label for="applicant_name">Student Name</label>
+                                <input type="text" id="applicant_name" name="applicant_name" required>
                             </div>
                             <div class="form-group">
                                 <label for="dob">Date of Birth</label>
-                                <input type="date" id="dob" required>
+                                <input type="date" id="dob" name="dob" required>
                             </div>
                             <div class="form-group">
-                                <label for="applyingClass">Applying For Class</label>
-                                <select id="applyingClass" required>
+                                <label for="applying_class">Applying For Class</label>
+                                <select id="applying_class" name="applying_class" required>
                                     <option value="">Select Class</option>
                                     <option value="Nursery">Nursery</option>
                                     <option value="LKG">LKG</option>
@@ -468,26 +468,26 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="parentNameAdmission">Parent/Guardian Name</label>
-                                <input type="text" id="parentNameAdmission" required>
+                                <label for="parent_name">Parent/Guardian Name</label>
+                                <input type="text" id="parent_name" name="parent_name" required>
                             </div>
                             <div class="form-group">
-                                <label for="parentContact">Parent Contact</label>
-                                <input type="tel" id="parentContact" required>
+                                <label for="parent_contact">Parent Contact</label>
+                                <input type="tel" id="parent_contact" name="parent_contact" required>
                             </div>
                             <div class="form-group">
                                 <label for="address">Address</label>
-                                <textarea id="address" required></textarea>
+                                <textarea id="address" name="address" required></textarea>
                             </div>
                             <div class="form-group">
-                                <label for="previousSchool">Previous School</label>
-                                <input type="text" id="previousSchool">
+                                <label for="previous_school">Previous School</label>
+                                <input type="text" id="previous_school" name="previous_school">
                             </div>
                             <div class="form-group">
-                                <label for="documents">Documents Status</label>
-                                <select id="documents">
-                                    <option value="complete">Complete</option>
+                                <label for="documents_status">Documents Status</label>
+                                <select id="documents_status" name="documents_status">
                                     <option value="pending">Pending</option>
+                                    <option value="complete">Complete</option>
                                     <option value="incomplete">Incomplete</option>
                                 </select>
                             </div>
@@ -499,7 +499,24 @@
                     </form>
                 </div>
                 <div id="admissionsList">
-                    <p>No admissions found. Submit your first application!</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Application ID</th>
+                                <th>Student Name</th>
+                                <th>Class</th>
+                                <th>Parent Name</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admissionsTableBody">
+                            <tr>
+                                <td colspan="7" class="no-data">No admissions found</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

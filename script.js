@@ -53,7 +53,10 @@ class SchoolManagementSystem {
             teacherForm.addEventListener('submit', (e) => this.handleTeacherForm(e));
         }
 
-        // Add more as needed
+        const admissionForm = document.getElementById('admissionForm');
+        if (admissionForm) {
+            admissionForm.addEventListener('submit', (e) => this.handleAdmissionForm(e));
+        }
 
         // Theme toggle
         const themeSelect = document.getElementById('theme');
@@ -86,6 +89,8 @@ class SchoolManagementSystem {
             this.loadStudents();
         } else if (sectionName === 'teachers') {
             this.loadTeachers();
+        } else if (sectionName === 'admissions') {
+            this.loadAdmissions();
         } // Add for other sections
     }
 
@@ -150,6 +155,38 @@ class SchoolManagementSystem {
         }
     }
 
+    loadAdmissions() {
+        const admissionsTableBody = document.getElementById('admissionsTableBody');
+        if (admissionsTableBody) {
+            if (this.admissions.length === 0) {
+                admissionsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="no-data">No admissions found</td>
+                    </tr>
+                `;
+            } else {
+                admissionsTableBody.innerHTML = this.admissions.map(a => `
+                    <tr>
+                        <td>${a.application_id}</td>
+                        <td>${a.applicant_name}</td>
+                        <td>${a.applying_class}</td>
+                        <td>${a.parent_name}</td>
+                        <td>${a.parent_contact}</td>
+                        <td>
+                            <span class="status-badge status-${a.documents_status}">${a.documents_status}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="schoolSystem.approveAdmission('${a.id}')">Approve</button>
+                            <button class="btn btn-sm btn-danger" onclick="schoolSystem.rejectAdmission('${a.id}')">Reject</button>
+                            <button class="btn btn-sm btn-primary" onclick="schoolSystem.editAdmission('${a.id}')">Edit</button>
+                            <button class="btn btn-sm btn-secondary" onclick="schoolSystem.deleteAdmission('${a.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+    }
+
     handleStudentForm(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -190,6 +227,36 @@ class SchoolManagementSystem {
         e.target.reset();
         this.loadTeachers();
         alert('Teacher added!');
+
+        // Update dashboard
+        this.loadDashboardData();
+    }
+
+    handleAdmissionForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const admission = {
+            id: Date.now().toString(),
+            application_id: formData.get('application_id'),
+            applicant_name: formData.get('applicant_name'),
+            dob: formData.get('dob'),
+            applying_class: formData.get('applying_class'),
+            parent_name: formData.get('parent_name'),
+            parent_contact: formData.get('parent_contact'),
+            address: formData.get('address'),
+            previous_school: formData.get('previous_school'),
+            documents_status: formData.get('documents_status'),
+            status: 'pending',
+            submission_date: new Date().toISOString()
+        };
+        this.admissions.push(admission);
+        localStorage.setItem('admissions', JSON.stringify(this.admissions));
+        e.target.reset();
+        this.loadAdmissions();
+        alert('Admission application submitted successfully!');
+
+        // Update dashboard
+        this.loadDashboardData();
     }
 
     editStudent(id) {
@@ -230,7 +297,47 @@ class SchoolManagementSystem {
         document.getElementById('addTeacherFormContainer').style.display = 'none';
     }
 
-    // Add similar for other sections
+    showAddAdmissionForm() {
+        document.getElementById('addAdmissionFormContainer').style.display = 'block';
+    }
+
+    hideAddAdmissionForm() {
+        document.getElementById('addAdmissionFormContainer').style.display = 'none';
+    }
+
+    approveAdmission(id) {
+        const admission = this.admissions.find(a => a.id === id);
+        if (admission) {
+            admission.status = 'approved';
+            localStorage.setItem('admissions', JSON.stringify(this.admissions));
+            this.loadAdmissions();
+            this.loadDashboardData();
+            alert('Admission approved successfully!');
+        }
+    }
+
+    rejectAdmission(id) {
+        const admission = this.admissions.find(a => a.id === id);
+        if (admission) {
+            admission.status = 'rejected';
+            localStorage.setItem('admissions', JSON.stringify(this.admissions));
+            this.loadAdmissions();
+            this.loadDashboardData();
+            alert('Admission rejected!');
+        }
+    }
+
+    editAdmission(id) {
+        // Implement edit logic
+        alert('Edit admission ' + id);
+    }
+
+    deleteAdmission(id) {
+        this.admissions = this.admissions.filter(a => a.id !== id);
+        localStorage.setItem('admissions', JSON.stringify(this.admissions));
+        this.loadAdmissions();
+        this.loadDashboardData();
+    }
 
     applyTheme(theme) {
         document.body.classList = theme;
