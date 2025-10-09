@@ -73,6 +73,11 @@ class SchoolManagementSystem {
             paperForm.addEventListener('submit', (e) => this.handlePaperForm(e));
         }
 
+        const feeRecordForm = document.getElementById('feeRecordForm');
+        if (feeRecordForm) {
+            feeRecordForm.addEventListener('submit', (e) => this.handleFeeRecordForm(e));
+        }
+
         // Theme toggle
         const themeSelect = document.getElementById('theme');
         if (themeSelect) {
@@ -108,6 +113,8 @@ class SchoolManagementSystem {
             this.loadAdmissions();
         } else if (sectionName === 'exams') {
             this.loadExamPapers();
+        } else if (sectionName === 'fees') {
+            this.loadFeeRecords();
         } // Add for other sections
     }
 
@@ -1048,6 +1055,245 @@ End of Paper
         this.questionPapers = this.questionPapers.filter(p => p.id !== id);
         localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
         this.loadExamPapers();
+    }
+
+    showAddFeeRecordForm() {
+        document.getElementById('addFeeRecordFormContainer').style.display = 'block';
+        this.loadStudentsForFee();
+        // Set default dates
+        const today = new Date();
+        const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM format
+        document.getElementById('paymentDate').valueAsDate = today;
+        document.getElementById('feeMonth').value = today.toLocaleDateString('en-US', { month: 'long' });
+        document.getElementById('feeYear').value = today.getFullYear().toString();
+    }
+
+    hideAddFeeRecordForm() {
+        document.getElementById('addFeeRecordFormContainer').style.display = 'none';
+        document.getElementById('studentFeeHistory').style.display = 'none';
+    }
+
+    loadStudentsForFee() {
+        const studentSelect = document.getElementById('feeStudent');
+
+        // Clear existing options except the first one
+        while (studentSelect.children.length > 1) {
+            studentSelect.removeChild(studentSelect.lastChild);
+        }
+
+        // Add all students to the dropdown
+        this.students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.id;
+            option.textContent = `${student.name} (${student.class} - Roll: ${student.roll_no || student.rollNo})`;
+            studentSelect.appendChild(option);
+        });
+    }
+
+    loadStudentFeeHistory() {
+        const studentId = document.getElementById('feeStudent').value;
+
+        if (!studentId) {
+            document.getElementById('studentFeeHistory').style.display = 'none';
+            return;
+        }
+
+        const student = this.students.find(s => s.id == studentId);
+        if (!student) {
+            document.getElementById('studentFeeHistory').style.display = 'none';
+            return;
+        }
+
+        // Get student's fee history
+        const studentFees = this.feeRecords.filter(f => f.student_id == studentId);
+
+        if (studentFees.length === 0) {
+            document.getElementById('feeHistoryList').innerHTML = '<p>No fee history found for this student</p>';
+        } else {
+            document.getElementById('feeHistoryList').innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Month/Year</th>
+                            <th>Amount</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Payment Date</th>
+                            <th>Method</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${studentFees.map(f => `
+                            <tr>
+                                <td>${f.month} ${f.year}</td>
+                                <td>₹${f.amount}</td>
+                                <td>₹${f.paid}</td>
+                                <td>₹${f.amount - f.paid}</td>
+                                <td>${new Date(f.payment_date).toLocaleDateString()}</td>
+                                <td>${f.payment_method}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        document.getElementById('studentFeeHistory').style.display = 'block';
+    }
+
+    handleFeeRecordForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const studentId = formData.get('fee_student');
+        const student = this.students.find(s => s.id == studentId);
+
+        if (!student) {
+            alert('Please select a valid student');
+            return;
+        }
+
+        const feeRecord = {
+            id: Date.now(),
+            student_id: studentId,
+            student_name: student.name,
+            student_class: student.class,
+            month: formData.get('fee_month'),
+            year: formData.get('fee_year'),
+            amount: parseFloat(formData.get('fee_amount')),
+            paid: parseFloat(formData.get('fee_paid')),
+            payment_date: formData.get('payment_date'),
+            payment_method: formData.get('payment_method'),
+            late_fee: parseFloat(formData.get('late_fee') || 0),
+            discount: parseFloat(formData.get('discount') || 0),
+            notes: formData.get('fee_notes'),
+            status: parseFloat(formData.get('fee_paid')) >= parseFloat(formData.get('fee_amount')) ? 'paid' : 'pending'
+        };
+
+        this.feeRecords.push(feeRecord);
+        localStorage.setItem('feeRecords', JSON.stringify(this.feeRecords));
+        e.target.reset();
+        this.loadFeeRecords();
+        document.getElementById('studentFeeHistory').style.display = 'none';
+        alert('Fee record added successfully!');
+    }
+
+    loadFeeRecords() {
+        const feesList = document.getElementById('feesList');
+        if (feesList) {
+            if (this.feeRecords.length === 0) {
+                feesList.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Class</th>
+                                <th>Month/Year</th>
+                                <th>Amount</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="no-data">No fee records found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                feesList.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Class</th>
+                                <th>Month/Year</th>
+                                <th>Amount</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.feeRecords.map(f => `
+                                <tr>
+                                    <td>${f.student_name}</td>
+                                    <td>${f.student_class}</td>
+                                    <td>${f.month} ${f.year}</td>
+                                    <td>₹${f.amount}</td>
+                                    <td>₹${f.paid}</td>
+                                    <td>₹${f.amount - f.paid}</td>
+                                    <td>
+                                        <span class="status-badge status-${f.status}">${f.status}</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="schoolSystem.editFeeRecord('${f.id}')">Edit</button>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteFeeRecord('${f.id}')">Delete</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+    }
+
+    editFeeRecord(id) {
+        // Implement edit logic
+        alert('Edit fee record ' + id);
+    }
+
+    deleteFeeRecord(id) {
+        this.feeRecords = this.feeRecords.filter(f => f.id !== id);
+        localStorage.setItem('feeRecords', JSON.stringify(this.feeRecords));
+        this.loadFeeRecords();
+    }
+
+    downloadFeesReport() {
+        if (this.feeRecords.length === 0) {
+            alert('No fee records found to generate report');
+            return;
+        }
+
+        let reportContent = 'FEE MANAGEMENT REPORT\n';
+        reportContent += 'Generated on: ' + new Date().toLocaleDateString() + '\n\n';
+        reportContent += '-'.repeat(80) + '\n\n';
+
+        // Summary
+        const totalAmount = this.feeRecords.reduce((sum, f) => sum + f.amount, 0);
+        const totalPaid = this.feeRecords.reduce((sum, f) => sum + f.paid, 0);
+        const totalPending = totalAmount - totalPaid;
+
+        reportContent += `SUMMARY:\n`;
+        reportContent += `Total Fee Amount: ₹${totalAmount}\n`;
+        reportContent += `Total Paid: ₹${totalPaid}\n`;
+        reportContent += `Total Pending: ₹${totalPending}\n\n`;
+
+        // Detailed records
+        reportContent += 'DETAILED RECORDS:\n';
+        reportContent += '-'.repeat(80) + '\n';
+        reportContent += 'Student Name'.padEnd(20) + 'Class'.padEnd(10) + 'Month'.padEnd(12) + 'Amount'.padEnd(10) + 'Paid'.padEnd(10) + 'Balance'.padEnd(10) + 'Status\n';
+        reportContent += '-'.repeat(80) + '\n';
+
+        this.feeRecords.forEach(fee => {
+            reportContent += `${fee.student_name.padEnd(20).substring(0, 20)}${fee.student_class.padEnd(10).substring(0, 10)}${fee.month.substring(0, 3).padEnd(12)}${fee.amount.toString().padEnd(10)}${fee.paid.toString().padEnd(10)}${(fee.amount - fee.paid).toString().padEnd(10)}${fee.status}\n`;
+        });
+
+        // Download the report
+        const blob = new Blob([reportContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fee_report_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
     }
 
     applyTheme(theme) {
