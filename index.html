@@ -121,16 +121,16 @@
                     <form id="studentForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="rollNo">Roll No</label>
-                                <input type="text" id="rollNo" required>
+                                <label for="roll_no">Roll No</label>
+                                <input type="text" id="roll_no" name="roll_no" required>
                             </div>
                             <div class="form-group">
-                                <label for="studentName">Name</label>
-                                <input type="text" id="studentName" required>
+                                <label for="name">Name</label>
+                                <input type="text" id="name" name="name" required>
                             </div>
                             <div class="form-group">
-                                <label for="studentClass">Class</label>
-                                <select id="studentClass" required>
+                                <label for="class">Class</label>
+                                <select id="class" name="class" required>
                                     <option value="">Select Class</option>
                                     <option value="Nursery">Nursery</option>
                                     <option value="LKG">LKG</option>
@@ -151,37 +151,37 @@
                             </div>
                             <div class="form-group">
                                 <label for="section">Section</label>
-                                <input type="text" id="section" placeholder="e.g., A, B">
+                                <input type="text" id="section" name="section" placeholder="e.g., A, B">
                             </div>
                             <div class="form-group">
                                 <label for="dob">Date of Birth</label>
-                                <input type="date" id="dob" required>
+                                <input type="date" id="dob" name="dob" required>
                             </div>
                             <div class="form-group">
                                 <label for="photo">Photo</label>
-                                <input type="file" id="photo" accept="image/*">
+                                <input type="file" id="photo" name="photo" accept="image/*">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="parentName">Parent Name</label>
-                                <input type="text" id="parentName" required>
+                                <label for="parent_name">Parent Name</label>
+                                <input type="text" id="parent_name" name="parent_name" required>
                             </div>
                             <div class="form-group">
-                                <label for="parentContact">Parent Contact</label>
-                                <input type="tel" id="parentContact" required>
+                                <label for="parent_contact">Parent Contact</label>
+                                <input type="tel" id="parent_contact" name="parent_contact" required>
                             </div>
                             <div class="form-group">
                                 <label for="address">Address</label>
-                                <textarea id="address" rows="3"></textarea>
+                                <textarea id="address" name="address" rows="3"></textarea>
                             </div>
                             <div class="form-group">
                                 <label for="aadhar">Aadhar Number</label>
-                                <input type="text" id="aadhar" placeholder="12-digit Aadhar">
+                                <input type="text" id="aadhar" name="aadhar" placeholder="12-digit Aadhar">
                             </div>
                             <div class="form-group">
-                                <label for="bloodGroup">Blood Group</label>
-                                <select id="bloodGroup">
+                                <label for="blood_group">Blood Group</label>
+                                <select id="blood_group" name="blood_group">
                                     <option value="">Select Blood Group</option>
                                     <option value="A+">A+</option>
                                     <option value="A-">A-</option>
@@ -194,8 +194,8 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="emergencyContact">Emergency Contact</label>
-                                <input type="tel" id="emergencyContact">
+                                <label for="emergency_contact">Emergency Contact</label>
+                                <input type="tel" id="emergency_contact" name="emergency_contact">
                             </div>
                         </div>
                         <div class="form-actions">
@@ -205,7 +205,23 @@
                     </form>
                 </div>
                 <div id="studentsList">
-                    <p class="no-data">No students found</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Roll No</th>
+                                <th>Name</th>
+                                <th>Class</th>
+                                <th>Section</th>
+                                <th>Parent Contact</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                            <tr>
+                                <td colspan="6" class="no-data">No students found</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

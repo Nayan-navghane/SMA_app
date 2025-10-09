@@ -97,19 +97,29 @@ class SchoolManagementSystem {
     }
 
     loadStudents() {
-        const studentsList = document.getElementById('studentsList');
-        if (studentsList) {
-            studentsList.innerHTML = this.students.map(s => `
-                <tr>
-                    <td>${s.roll_no}</td>
-                    <td>${s.name}</td>
-                    <td>${s.class}</td>
-                    <td>
-                        <button onclick="schoolSystem.editStudent(${s.id})">Edit</button>
-                        <button onclick="schoolSystem.deleteStudent(${s.id})">Delete</button>
-                    </td>
-                </tr>
-            `).join('') || '<tr><td>No students</td></tr>';
+        const studentsTableBody = document.getElementById('studentsTableBody');
+        if (studentsTableBody) {
+            if (this.students.length === 0) {
+                studentsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="no-data">No students found</td>
+                    </tr>
+                `;
+            } else {
+                studentsTableBody.innerHTML = this.students.map(s => `
+                    <tr>
+                        <td>${s.roll_no || s.rollNo}</td>
+                        <td>${s.name}</td>
+                        <td>${s.class}</td>
+                        <td>${s.section || ''}</td>
+                        <td>${s.parent_contact || s.parentContact || ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="schoolSystem.editStudent(${s.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteStudent(${s.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
         }
     }
 
