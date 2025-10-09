@@ -357,38 +357,91 @@
                     <form id="staffForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="staffName">Name</label>
-                                <input type="text" id="staffName" required>
+                                <label for="staffName">Full Name</label>
+                                <input type="text" id="staffName" name="staffName" required>
                             </div>
                             <div class="form-group">
                                 <label for="staffDepartment">Department</label>
-                                <select id="staffDepartment" required>
+                                <select id="staffDepartment" name="staffDepartment" required>
                                     <option value="">Select Department</option>
                                     <option value="Administration">Administration</option>
                                     <option value="Teaching">Teaching</option>
                                     <option value="Support">Support</option>
                                     <option value="Maintenance">Maintenance</option>
+                                    <option value="Security">Security</option>
+                                    <option value="Transport">Transport</option>
+                                    <option value="Library">Library</option>
+                                    <option value="Laboratory">Laboratory</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="staffRole">Role</label>
-                                <input type="text" id="staffRole" required placeholder="e.g., Principal, Clerk">
+                                <label for="staffRole">Role/Position</label>
+                                <input type="text" id="staffRole" name="staffRole" required placeholder="e.g., Principal, Clerk, Security Guard">
                             </div>
                             <div class="form-group">
-                                <label for="staffContact">Contact</label>
-                                <input type="tel" id="staffContact" required>
+                                <label for="staffContact">Contact Number</label>
+                                <input type="tel" id="staffContact" name="staffContact" required>
                             </div>
                             <div class="form-group">
-                                <label for="staffSalary">Salary</label>
-                                <input type="number" id="staffSalary" min="0" required>
+                                <label for="staffEmail">Email Address</label>
+                                <input type="email" id="staffEmail" name="staffEmail">
                             </div>
                             <div class="form-group">
-                                <label for="staffJoinDate">Join Date</label>
-                                <input type="date" id="staffJoinDate" required>
+                                <label for="staffSalary">Monthly Salary</label>
+                                <input type="number" id="staffSalary" name="staffSalary" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="staffJoinDate">Joining Date</label>
+                                <input type="date" id="staffJoinDate" name="staffJoinDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="staffAddress">Address</label>
+                                <textarea id="staffAddress" name="staffAddress" rows="3" placeholder="Complete address"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="staffQualification">Qualification</label>
+                                <input type="text" id="staffQualification" name="staffQualification" placeholder="e.g., B.A., M.Sc., Diploma">
+                            </div>
+                            <div class="form-group">
+                                <label for="staffExperience">Experience (years)</label>
+                                <input type="number" id="staffExperience" name="staffExperience" min="0" placeholder="Years of experience">
+                            </div>
+                            <div class="form-group">
+                                <label for="staffEmergencyContact">Emergency Contact</label>
+                                <input type="tel" id="staffEmergencyContact" name="staffEmergencyContact">
+                            </div>
+                            <div class="form-group">
+                                <label for="staffPhoto">Photo</label>
+                                <input type="file" id="staffPhoto" name="staffPhoto" accept="image/*">
+                                <div class="photo-preview" id="photoPreview" style="margin-top: 10px;">
+                                    <img id="previewImg" src="" alt="Photo Preview" style="max-width: 150px; max-height: 150px; display: none; border: 1px solid #ddd; padding: 5px;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="staffBloodGroup">Blood Group</label>
+                                <select id="staffBloodGroup" name="staffBloodGroup">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="staffAadhar">Aadhar Number</label>
+                                <input type="text" id="staffAadhar" name="staffAadhar" placeholder="12-digit Aadhar number" maxlength="12" pattern="[0-9]{12}">
                             </div>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Add Staff</button>
+                            <button type="submit" class="btn btn-primary">Add Staff Member</button>
                             <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddStaffForm()">Cancel</button>
                         </div>
                     </form>

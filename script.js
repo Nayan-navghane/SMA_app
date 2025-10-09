@@ -78,6 +78,11 @@ class SchoolManagementSystem {
             feeRecordForm.addEventListener('submit', (e) => this.handleFeeRecordForm(e));
         }
 
+        const staffForm = document.getElementById('staffForm');
+        if (staffForm) {
+            staffForm.addEventListener('submit', (e) => this.handleStaffForm(e));
+        }
+
         // Theme toggle
         const themeSelect = document.getElementById('theme');
         if (themeSelect) {
@@ -109,6 +114,8 @@ class SchoolManagementSystem {
             this.loadStudents();
         } else if (sectionName === 'teachers') {
             this.loadTeachers();
+        } else if (sectionName === 'staff') {
+            this.loadStaff();
         } else if (sectionName === 'admissions') {
             this.loadAdmissions();
         } else if (sectionName === 'exams') {
@@ -305,6 +312,231 @@ class SchoolManagementSystem {
         this.loadTeachers();
     }
 
+    handleStaffForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const staff = {
+            id: Date.now(),
+            name: formData.get('staffName'),
+            department: formData.get('staffDepartment'),
+            role: formData.get('staffRole'),
+            contact: formData.get('staffContact'),
+            salary: formData.get('staffSalary'),
+            join_date: formData.get('staffJoinDate'),
+            address: formData.get('staffAddress'),
+            email: formData.get('staffEmail'),
+            qualification: formData.get('staffQualification'),
+            experience: formData.get('staffExperience'),
+            emergency_contact: formData.get('staffEmergencyContact'),
+            blood_group: formData.get('staffBloodGroup'),
+            aadhar: formData.get('staffAadhar')
+        };
+
+        this.staff.push(staff);
+        localStorage.setItem('staff', JSON.stringify(this.staff));
+        e.target.reset();
+        this.loadStaff();
+        alert('Staff member added successfully!');
+    }
+
+    loadStaff() {
+        const staffList = document.getElementById('staffList');
+        if (staffList) {
+            if (this.staff.length === 0) {
+                staffList.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Role</th>
+                                <th>Contact</th>
+                                <th>Salary</th>
+                                <th>Join Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="no-data">No staff members found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                staffList.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Role</th>
+                                <th>Contact</th>
+                                <th>Salary</th>
+                                <th>Join Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.staff.map(s => `
+                                <tr>
+                                    <td>${s.name}</td>
+                                    <td>${s.department}</td>
+                                    <td>${s.role}</td>
+                                    <td>${s.contact}</td>
+                                    <td>₹${s.salary}</td>
+                                    <td>${new Date(s.join_date).toLocaleDateString()}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="schoolSystem.editStaff('${s.id}')">Edit</button>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteStaff('${s.id}')">Delete</button>
+                                        <button class="btn btn-sm btn-info" onclick="schoolSystem.viewStaffDetails('${s.id}')">View</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+    }
+
+    editStaff(id) {
+        // Implement edit logic
+        alert('Edit staff ' + id);
+    }
+
+    deleteStaff(id) {
+        this.staff = this.staff.filter(s => s.id !== id);
+        localStorage.setItem('staff', JSON.stringify(this.staff));
+        this.loadStaff();
+    }
+
+    viewStaffDetails(id) {
+        const staffMember = this.staff.find(s => s.id == id);
+        if (staffMember) {
+            const details = `
+                <div class="staff-details-modal">
+                    <h3>Staff Details</h3>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <strong>Name:</strong> ${staffMember.name}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Department:</strong> ${staffMember.department}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Role:</strong> ${staffMember.role}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Contact:</strong> ${staffMember.contact}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Email:</strong> ${staffMember.email || 'N/A'}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Salary:</strong> ₹${staffMember.salary}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Join Date:</strong> ${new Date(staffMember.join_date).toLocaleDateString()}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Address:</strong> ${staffMember.address || 'N/A'}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Qualification:</strong> ${staffMember.qualification || 'N/A'}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Experience:</strong> ${staffMember.experience || 0} years
+                        </div>
+                        <div class="detail-item">
+                            <strong>Blood Group:</strong> ${staffMember.blood_group || 'N/A'}
+                        </div>
+                        <div class="detail-item">
+                            <strong>Aadhar:</strong> ${staffMember.aadhar || 'N/A'}
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="schoolSystem.closeStaffModal()">Close</button>
+                    </div>
+                </div>
+            `;
+
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('staffModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'staffModal';
+                modal.className = 'modal';
+                modal.style.display = 'block';
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = details;
+
+            // Add modal styles
+            if (!document.getElementById('staffModalStyles')) {
+                const styles = document.createElement('style');
+                styles.id = 'staffModalStyles';
+                styles.textContent = `
+                    .staff-details-modal {
+                        background: white;
+                        padding: 20px;
+                        border-radius: 8px;
+                        max-width: 600px;
+                        margin: 20px auto;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    }
+                    .details-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 15px;
+                        margin: 20px 0;
+                    }
+                    .detail-item {
+                        padding: 8px;
+                        border-bottom: 1px solid #eee;
+                    }
+                    .modal-actions {
+                        text-align: center;
+                        margin-top: 20px;
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+        }
+    }
+
+    closeStaffModal() {
+        const modal = document.getElementById('staffModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Photo preview functionality for staff form
+    setupPhotoPreview() {
+        const photoInput = document.getElementById('staffPhoto');
+        const previewImg = document.getElementById('previewImg');
+
+        if (photoInput && previewImg) {
+            photoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewImg.src = '';
+                    previewImg.style.display = 'none';
+                }
+            });
+        }
+    }
+
     showAddStudentForm() {
         document.getElementById('addStudentFormContainer').style.display = 'block';
     }
@@ -319,6 +551,14 @@ class SchoolManagementSystem {
 
     hideAddTeacherForm() {
         document.getElementById('addTeacherFormContainer').style.display = 'none';
+    }
+
+    showAddStaffForm() {
+        document.getElementById('addStaffFormContainer').style.display = 'block';
+    }
+
+    hideAddStaffForm() {
+        document.getElementById('addStaffFormContainer').style.display = 'none';
     }
 
     showAddAdmissionForm() {
