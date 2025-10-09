@@ -235,46 +235,76 @@
                     <input type="text" id="teacherSearch" placeholder="Search by name or subject...">
                     <select id="subjectFilter">
                         <option value="">All Subjects</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="History">History</option>
+                        <option value="Geography">Geography</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Economics">Economics</option>
+                        <option value="Commerce">Commerce</option>
+                        <option value="Art">Art</option>
+                        <option value="Music">Music</option>
+                        <option value="Physical Education">Physical Education</option>
+                        <option value="Environmental Science">Environmental Science</option>
                     </select>
                 </div>
                 <div class="form-container" id="addTeacherFormContainer" style="display: none;">
                     <form id="teacherForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="teacherName">Name</label>
-                                <input type="text" id="teacherName" required>
+                                <label for="name">Name</label>
+                                <input type="text" id="name" name="name" required>
                             </div>
                             <div class="form-group">
                                 <label for="subject">Subject</label>
-                                <select id="subject" required>
+                                <select id="subject" name="subject" required>
                                     <option value="">Select Subject</option>
+                                    <option value="Mathematics">Mathematics</option>
+                                    <option value="Physics">Physics</option>
+                                    <option value="Chemistry">Chemistry</option>
+                                    <option value="Biology">Biology</option>
+                                    <option value="English">English</option>
+                                    <option value="Hindi">Hindi</option>
+                                    <option value="History">History</option>
+                                    <option value="Geography">Geography</option>
+                                    <option value="Computer Science">Computer Science</option>
+                                    <option value="Economics">Economics</option>
+                                    <option value="Commerce">Commerce</option>
+                                    <option value="Art">Art</option>
+                                    <option value="Music">Music</option>
+                                    <option value="Physical Education">Physical Education</option>
+                                    <option value="Environmental Science">Environmental Science</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="teacherContact">Contact</label>
-                                <input type="tel" id="teacherContact" required>
+                                <label for="contact">Contact</label>
+                                <input type="tel" id="contact" name="contact" required>
                             </div>
                             <div class="form-group">
-                                <label for="joiningDate">Joining Date</label>
-                                <input type="date" id="joiningDate" required>
+                                <label for="joining_date">Joining Date</label>
+                                <input type="date" id="joining_date" name="joining_date" required>
                             </div>
                             <div class="form-group">
                                 <label for="salary">Salary</label>
-                                <input type="number" id="salary" min="0" step="0.01" required>
+                                <input type="number" id="salary" name="salary" min="0" step="0.01" required>
                             </div>
                             <div class="form-group">
                                 <label for="photo">Photo</label>
-                                <input type="file" id="teacherPhoto" accept="image/*">
+                                <input type="file" id="photo" name="photo" accept="image/*">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="experience">Experience (years)</label>
-                                <input type="number" id="experience" min="0">
+                                <input type="number" id="experience" name="experience" min="0">
                             </div>
                             <div class="form-group">
                                 <label for="qualification">Qualification</label>
-                                <input type="text" id="qualification">
+                                <input type="text" id="qualification" name="qualification">
                             </div>
                         </div>
                         <div class="form-actions">
@@ -284,7 +314,23 @@
                     </form>
                 </div>
                 <div id="teachersList">
-                    <p class="no-data">No teachers found</p>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Subject</th>
+                                <th>Contact</th>
+                                <th>Joining Date</th>
+                                <th>Salary</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teachersTableBody">
+                            <tr>
+                                <td colspan="6" class="no-data">No teachers found</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

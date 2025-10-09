@@ -124,18 +124,29 @@ class SchoolManagementSystem {
     }
 
     loadTeachers() {
-        const teachersList = document.getElementById('teachersList');
-        if (teachersList) {
-            teachersList.innerHTML = this.teachers.map(t => `
-                <tr>
-                    <td>${t.name}</td>
-                    <td>${t.subject}</td>
-                    <td>
-                        <button onclick="schoolSystem.editTeacher(${t.id})">Edit</button>
-                        <button onclick="schoolSystem.deleteTeacher(${t.id})">Delete</button>
-                    </td>
-                </tr>
-            `).join('') || '<tr><td>No teachers</td></tr>';
+        const teachersTableBody = document.getElementById('teachersTableBody');
+        if (teachersTableBody) {
+            if (this.teachers.length === 0) {
+                teachersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="no-data">No teachers found</td>
+                    </tr>
+                `;
+            } else {
+                teachersTableBody.innerHTML = this.teachers.map(t => `
+                    <tr>
+                        <td>${t.name}</td>
+                        <td>${t.subject}</td>
+                        <td>${t.contact}</td>
+                        <td>${t.joining_date}</td>
+                        <td>₹${t.salary}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="schoolSystem.editTeacher(${t.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTeacher(${t.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
         }
     }
 
