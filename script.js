@@ -68,6 +68,11 @@ class SchoolManagementSystem {
             teacherAttendanceForm.addEventListener('submit', (e) => this.handleTeacherAttendanceForm(e));
         }
 
+        const paperForm = document.getElementById('paperForm');
+        if (paperForm) {
+            paperForm.addEventListener('submit', (e) => this.handlePaperForm(e));
+        }
+
         // Theme toggle
         const themeSelect = document.getElementById('theme');
         if (themeSelect) {
@@ -101,6 +106,8 @@ class SchoolManagementSystem {
             this.loadTeachers();
         } else if (sectionName === 'admissions') {
             this.loadAdmissions();
+        } else if (sectionName === 'exams') {
+            this.loadExamPapers();
         } // Add for other sections
     }
 
@@ -701,6 +708,346 @@ class SchoolManagementSystem {
         `;
 
         document.getElementById('attendanceReportList').innerHTML = html;
+    }
+
+    showAddPaperForm() {
+        document.getElementById('addPaperFormContainer').style.display = 'block';
+    }
+
+    hideAddPaperForm() {
+        document.getElementById('addPaperFormContainer').style.display = 'none';
+    }
+
+    loadSubjectsForPaper() {
+        const classValue = document.getElementById('paperClass').value;
+        const subjectSelect = document.getElementById('paperSubject');
+
+        // Clear existing options except the first one
+        while (subjectSelect.children.length > 1) {
+            subjectSelect.removeChild(subjectSelect.lastChild);
+        }
+
+        if (classValue) {
+            // Add relevant subjects based on class
+            const subjects = this.getSubjectsForClass(classValue);
+            subjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                subjectSelect.appendChild(option);
+            });
+        }
+    }
+
+    getSubjectsForClass(classValue) {
+        // Define subjects based on class levels
+        const classSubjects = {
+            'Nursery': ['English', 'Mathematics', 'Art', 'Music', 'Physical Education'],
+            'LKG': ['English', 'Mathematics', 'Art', 'Music', 'Physical Education'],
+            'UKG': ['English', 'Mathematics', 'Art', 'Music', 'Physical Education'],
+            '1': ['English', 'Mathematics', 'Hindi', 'Environmental Science', 'Art', 'Music', 'Physical Education'],
+            '2': ['English', 'Mathematics', 'Hindi', 'Environmental Science', 'Art', 'Music', 'Physical Education'],
+            '3': ['English', 'Mathematics', 'Hindi', 'Environmental Science', 'Art', 'Music', 'Physical Education'],
+            '4': ['English', 'Mathematics', 'Hindi', 'Environmental Science', 'Art', 'Music', 'Physical Education'],
+            '5': ['English', 'Mathematics', 'Hindi', 'Environmental Science', 'Art', 'Music', 'Physical Education'],
+            '6': ['English', 'Mathematics', 'Hindi', 'Science', 'Social Science', 'Computer Science', 'Art', 'Music', 'Physical Education'],
+            '7': ['English', 'Mathematics', 'Hindi', 'Science', 'Social Science', 'Computer Science', 'Art', 'Music', 'Physical Education'],
+            '8': ['English', 'Mathematics', 'Hindi', 'Science', 'Social Science', 'Computer Science', 'Art', 'Music', 'Physical Education'],
+            '9': ['English', 'Mathematics', 'Hindi', 'Physics', 'Chemistry', 'Biology', 'History', 'Geography', 'Computer Science', 'Physical Education'],
+            '10': ['English', 'Mathematics', 'Hindi', 'Physics', 'Chemistry', 'Biology', 'History', 'Geography', 'Computer Science', 'Physical Education'],
+            '11': ['English', 'Mathematics', 'Hindi', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Economics', 'Physical Education'],
+            '12': ['English', 'Mathematics', 'Hindi', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Economics', 'Physical Education']
+        };
+
+        return classSubjects[classValue] || [];
+    }
+
+    handlePaperForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const paper = {
+            id: Date.now(),
+            paper_title: formData.get('paper_title'),
+            paper_class: formData.get('paper_class'),
+            paper_subject: formData.get('paper_subject'),
+            paper_type: formData.get('paper_type'),
+            paper_duration: formData.get('paper_duration'),
+            paper_total_marks: formData.get('paper_total_marks'),
+            paper_content: formData.get('paper_content'),
+            watermark_text: formData.get('watermark_text'),
+            instructions: formData.get('instructions'),
+            created_date: new Date().toISOString()
+        };
+
+        this.questionPapers.push(paper);
+        localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
+        e.target.reset();
+        this.loadExamPapers();
+        alert('Exam paper created successfully!');
+
+        // Update dashboard
+        this.loadDashboardData();
+    }
+
+    loadExamPapers() {
+        const examsList = document.getElementById('examsList');
+        if (examsList) {
+            if (this.questionPapers.length === 0) {
+                examsList.innerHTML = '<p>No papers created yet. Create your first paper!</p>';
+            } else {
+                examsList.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th>Type</th>
+                                <th>Duration</th>
+                                <th>Marks</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.questionPapers.map(p => `
+                                <tr>
+                                    <td>${p.paper_title}</td>
+                                    <td>${p.paper_class}</td>
+                                    <td>${p.paper_subject}</td>
+                                    <td>${p.paper_type}</td>
+                                    <td>${p.paper_duration} min</td>
+                                    <td>${p.paper_total_marks}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="schoolSystem.previewPaper('${p.id}')">Preview</button>
+                                        <button class="btn btn-sm btn-primary" onclick="schoolSystem.printPaper('${p.id}')">Print</button>
+                                        <button class="btn btn-sm btn-secondary" onclick="schoolSystem.downloadPaper('${p.id}')">Download</button>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deletePaper('${p.id}')">Delete</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+    }
+
+    formatText(command) {
+        const contentArea = document.getElementById('paperContent');
+        contentArea.focus();
+
+        if (command === 'bold') {
+            this.insertAtCursor(contentArea, '**', '**');
+        } else if (command === 'italic') {
+            this.insertAtCursor(contentArea, '*', '*');
+        } else if (command === 'underline') {
+            this.insertAtCursor(contentArea, '_', '_');
+        }
+    }
+
+    insertAtCursor(textarea, beforeText, afterText) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        const textToInsert = beforeText + selectedText + afterText;
+
+        textarea.value = textarea.value.substring(0, start) + textToInsert + textarea.value.substring(end);
+        textarea.focus();
+
+        // Set cursor position after inserted text
+        const newStart = start + beforeText.length;
+        const newEnd = newStart + selectedText.length;
+        textarea.setSelectionRange(newStart, newEnd);
+    }
+
+    addFormula() {
+        const contentArea = document.getElementById('paperContent');
+        const formula = prompt('Enter LaTeX formula (e.g., \\frac{a}{b}, \\sqrt{x}, x^{2}):');
+        if (formula) {
+            this.insertAtCursor(contentArea, '$' + formula + '$', '');
+        }
+    }
+
+    addTable() {
+        const contentArea = document.getElementById('paperContent');
+        const rows = prompt('Number of rows:', '3');
+        const cols = prompt('Number of columns:', '3');
+
+        if (rows && cols) {
+            let table = '\n|';
+            for (let c = 0; c < parseInt(cols); c++) {
+                table += ' Header |';
+            }
+            table += '\n|';
+            for (let c = 0; c < parseInt(cols); c++) {
+                table += '--------|';
+            }
+            table += '\n';
+
+            for (let r = 0; r < parseInt(rows) - 1; r++) {
+                table += '|';
+                for (let c = 0; c < parseInt(cols); c++) {
+                    table += '        |';
+                }
+                table += '\n';
+            }
+            table += '\n';
+
+            this.insertAtCursor(contentArea, table, '');
+        }
+    }
+
+    addWatermark() {
+        const watermarkText = prompt('Enter watermark text:');
+        if (watermarkText) {
+            document.getElementById('watermarkText').value = watermarkText;
+        }
+    }
+
+    addQuickQuestion() {
+        const questionType = prompt('Question type (1. MCQ, 2. Short Answer, 3. Long Answer):');
+        const contentArea = document.getElementById('paperContent');
+
+        let questionTemplate = '';
+
+        switch(questionType) {
+            case '1':
+                questionTemplate = '\n**Question:** [Multiple Choice Question]\n\nA) Option 1\nB) Option 2\nC) Option 3\nD) Option 4\n\n**Answer:** [Correct Option]\n\n---\n';
+                break;
+            case '2':
+                questionTemplate = '\n**Question:** [Short Answer Question]\n\n**Answer:** [Answer here]\n\n---\n';
+                break;
+            case '3':
+                questionTemplate = '\n**Question:** [Long Answer Question]\n\n**Answer:**\n\n[Answer space]\n\n---\n';
+                break;
+            default:
+                questionTemplate = '\n**Question:** [Your question here]\n\n**Answer:** [Answer here]\n\n---\n';
+        }
+
+        this.insertAtCursor(contentArea, questionTemplate, '');
+    }
+
+    previewPaper(paperId = null) {
+        const paperContent = document.getElementById('paperContent').value;
+        const paperTitle = document.getElementById('paperTitle').value;
+        const watermarkText = document.getElementById('watermarkText').value;
+
+        if (!paperContent.trim()) {
+            alert('Please enter paper content first');
+            return;
+        }
+
+        // Create preview window
+        const previewWindow = window.open('', '_blank', 'width=800,height=600');
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${paperTitle || 'Exam Paper Preview'}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        line-height: 1.6;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 2px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .watermark {
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%) rotate(-45deg);
+                        font-size: 48px;
+                        color: rgba(0,0,0,0.1);
+                        z-index: -1;
+                        pointer-events: none;
+                    }
+                    .content {
+                        white-space: pre-wrap;
+                        font-size: 14px;
+                    }
+                    .bold { font-weight: bold; }
+                    .italic { font-style: italic; }
+                    .underline { text-decoration: underline; }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="watermark">${watermarkText || ''}</div>
+                <div class="header">
+                    <h1>${paperTitle || 'Exam Paper'}</h1>
+                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                </div>
+                <div class="content">${this.formatContentForPreview(paperContent)}</div>
+                <div class="no-print" style="margin-top: 30px; text-align: center;">
+                    <button onclick="window.print()">Print Paper</button>
+                    <button onclick="window.close()">Close Preview</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    formatContentForPreview(content) {
+        return content
+            .replace(/\*\*(.*?)\*\*/g, '<span class="bold">$1</span>')
+            .replace(/\*(.*?)\*/g, '<span class="italic">$1</span>')
+            .replace(/_(.*?)_/g, '<span class="underline">$1</span>')
+            .replace(/\$([^$]+)\$/g, '<span style="font-family: serif; font-style: italic;">$1</span>');
+    }
+
+    printPaper(paperId) {
+        this.previewPaper(paperId);
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    downloadPaper(paperId) {
+        const paperContent = document.getElementById('paperContent').value;
+        const paperTitle = document.getElementById('paperTitle').value || 'exam_paper';
+
+        if (!paperContent.trim()) {
+            alert('Please enter paper content first');
+            return;
+        }
+
+        const blob = new Blob([`
+EXAM PAPER: ${paperTitle}
+Generated on: ${new Date().toLocaleDateString()}
+
+${'-'.repeat(50)}
+
+${paperContent}
+
+${'-'.repeat(50)}
+End of Paper
+        `], { type: 'text/plain' });
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${paperTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    deletePaper(id) {
+        this.questionPapers = this.questionPapers.filter(p => p.id !== id);
+        localStorage.setItem('questionPapers', JSON.stringify(this.questionPapers));
+        this.loadExamPapers();
     }
 
     applyTheme(theme) {
