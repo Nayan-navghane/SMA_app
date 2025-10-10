@@ -9,6 +9,13 @@ class SchoolManagementSystem {
         this.questionPapers = JSON.parse(localStorage.getItem('questionPapers')) || [];
         this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
         this.feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
+        this.studentResults = JSON.parse(localStorage.getItem('studentResults')) || [];
+        this.schoolInfo = JSON.parse(localStorage.getItem('schoolInfo')) || {
+            name: '',
+            logo: '',
+            address: '',
+            academicYear: ''
+        };
         this.settings = JSON.parse(localStorage.getItem('settings')) || {
             schoolInfo: {
                 name: 'School Management System'
@@ -88,10 +95,27 @@ class SchoolManagementSystem {
             scheduleForm.addEventListener('submit', (e) => this.handleScheduleForm(e));
         }
 
+        const resultForm = document.getElementById('resultForm');
+        if (resultForm) {
+            resultForm.addEventListener('submit', (e) => this.handleResultForm(e));
+        }
+
         // Schedule form dropdown listeners
         const scheduleClassSelect = document.getElementById('scheduleClass');
         if (scheduleClassSelect) {
             scheduleClassSelect.addEventListener('change', () => this.loadSubjectsForSchedule());
+        }
+
+        // Result form dropdown listeners
+        const resultClassSelect = document.getElementById('resultClass');
+        if (resultClassSelect) {
+            resultClassSelect.addEventListener('change', () => this.loadSubjectsForResult());
+        }
+
+        // School logo upload listener
+        const schoolLogoInput = document.getElementById('schoolLogo');
+        if (schoolLogoInput) {
+            schoolLogoInput.addEventListener('change', (e) => this.previewSchoolLogo(e));
         }
 
         // Theme toggle
@@ -129,6 +153,8 @@ class SchoolManagementSystem {
             this.loadStaff();
         } else if (sectionName === 'schedule') {
             this.loadSchedules();
+        } else if (sectionName === 'results') {
+            this.loadResults();
         } else if (sectionName === 'admissions') {
             this.loadAdmissions();
         } else if (sectionName === 'exams') {
@@ -722,6 +748,668 @@ class SchoolManagementSystem {
 
     hideAddScheduleForm() {
         document.getElementById('addScheduleFormContainer').style.display = 'none';
+    }
+
+    showAddResultForm() {
+        document.getElementById('addResultFormContainer').style.display = 'block';
+        this.loadStudentsForResult();
+    }
+
+    hideAddResultForm() {
+        document.getElementById('addResultFormContainer').style.display = 'none';
+        document.getElementById('gradeCalculation').style.display = 'none';
+    }
+
+    loadStudentsForResult() {
+        const studentSelect = document.getElementById('resultStudent');
+        if (!studentSelect) return;
+
+        // Clear existing options except the first one
+        while (studentSelect.children.length > 1) {
+            studentSelect.removeChild(studentSelect.lastChild);
+        }
+
+        // Add all students to the dropdown
+        this.students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.id;
+            option.textContent = `${student.name} (${student.class} - Roll: ${student.roll_no || student.rollNo})`;
+            studentSelect.appendChild(option);
+        });
+    }
+
+    loadSubjectsForResult() {
+        const classValue = document.getElementById('resultClass').value;
+        const subjectsContainer = document.getElementById('subjectsContainer');
+        if (!subjectsContainer) return;
+
+        if (!classValue) {
+            subjectsContainer.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-grid">';
+        subjects.forEach((subject, index) => {
+            html += `
+                <div class="subject-marks-entry">
+                    <div class="subject-info">
+                        <label>${subject}</label>
+                        <input type="hidden" name="subject_${index}" value="${subject}">
+                    </div>
+                    <div class="marks-inputs">
+                        <div class="marks-field">
+                            <label>Marks Obtained</label>
+                            <input type="number" name="marks_${index}" min="0" max="100" step="0.5"
+                                   placeholder="0-100" oninput="schoolSystem.calculateGrade()">
+                        </div>
+                        <div class="marks-field">
+                            <label>Out of</label>
+                            <input type="number" name="max_marks_${index}" value="100" min="1"
+                                   oninput="schoolSystem.calculateGrade()">
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsContainer.innerHTML = html;
+    }
+
+    handleResultForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const studentId = formData.get('result_student');
+        const student = this.students.find(s => s.id == studentId);
+
+        if (!student) {
+            alert('Please select a valid student');
+            return;
+        }
+
+        // Collect all subject marks
+        const subjects = [];
+        const subjectsContainer = document.getElementById('subjectsContainer');
+        const subjectEntries = subjectsContainer.querySelectorAll('.subject-marks-entry');
+
+        subjectEntries.forEach((entry, index) => {
+            const subjectName = formData.get(`subject_${index}`);
+            const marks = parseFloat(formData.get(`marks_${index}`) || 0);
+            const maxMarks = parseFloat(formData.get(`max_marks_${index}`) || 100);
+            const percentage = (marks / maxMarks) * 100;
+
+            subjects.push({
+                name: subjectName,
+                marks: marks,
+                maxMarks: maxMarks,
+                percentage: percentage
+            });
+        });
+
+        // Calculate overall result
+        const totalMarks = subjects.reduce((sum, subj) => sum + subj.marks, 0);
+        const totalMaxMarks = subjects.reduce((sum, subj) => sum + subj.maxMarks, 0);
+        const overallPercentage = (totalMarks / totalMaxMarks) * 100;
+
+        const result = {
+            id: Date.now(),
+            student_id: studentId,
+            student_name: student.name,
+            student_roll: student.roll_no || student.rollNo,
+            class: student.class,
+            section: student.section,
+            exam_type: formData.get('exam_type'),
+            exam_date: formData.get('exam_date'),
+            subjects: subjects,
+            total_marks: totalMarks,
+            total_max_marks: totalMaxMarks,
+            overall_percentage: overallPercentage,
+            grade: this.calculateGrade(overallPercentage),
+            result_date: new Date().toISOString()
+        };
+
+        this.studentResults.push(result);
+        localStorage.setItem('studentResults', JSON.stringify(this.studentResults));
+        e.target.reset();
+        this.loadResults();
+        document.getElementById('gradeCalculation').style.display = 'none';
+        alert('Student result created successfully!');
+    }
+
+    calculateGrade(percentage = null) {
+        if (percentage === null) {
+            // Calculate from form inputs
+            const subjectsContainer = document.getElementById('subjectsContainer');
+            if (!subjectsContainer) return;
+
+            const marksInputs = subjectsContainer.querySelectorAll('input[name*="marks_"]');
+            const maxMarksInputs = subjectsContainer.querySelectorAll('input[name*="max_marks_"]');
+
+            let totalMarks = 0;
+            let totalMaxMarks = 0;
+
+            marksInputs.forEach((input, index) => {
+                const marks = parseFloat(input.value) || 0;
+                const maxMarks = parseFloat(maxMarksInputs[index]?.value) || 100;
+                totalMarks += marks;
+                totalMaxMarks += maxMarks;
+            });
+
+            if (totalMaxMarks === 0) return;
+
+            percentage = (totalMarks / totalMaxMarks) * 100;
+        }
+
+        let grade = 'F';
+        if (percentage >= 90) grade = 'A+';
+        else if (percentage >= 80) grade = 'A';
+        else if (percentage >= 70) grade = 'B+';
+        else if (percentage >= 60) grade = 'B';
+        else if (percentage >= 50) grade = 'C+';
+        else if (percentage >= 40) grade = 'C';
+        else if (percentage >= 33) grade = 'D';
+
+        // Update the result summary
+        const resultSummary = document.getElementById('resultSummary');
+        if (resultSummary) {
+            resultSummary.innerHTML = `
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <strong>Total Marks:</strong> ${totalMarks.toFixed(2)}
+                    </div>
+                    <div class="summary-item">
+                        <strong>Maximum Marks:</strong> ${totalMaxMarks}
+                    </div>
+                    <div class="summary-item">
+                        <strong>Percentage:</strong> ${percentage.toFixed(2)}%
+                    </div>
+                    <div class="summary-item">
+                        <strong>Grade:</strong> ${grade}
+                    </div>
+                </div>
+            `;
+            document.getElementById('gradeCalculation').style.display = 'block';
+        }
+
+        return grade;
+    }
+
+    saveSchoolInfo() {
+        const schoolName = document.getElementById('schoolName').value;
+        const schoolAddress = document.getElementById('schoolAddress').value;
+        const academicYear = document.getElementById('academicYear').value;
+
+        this.schoolInfo = {
+            name: schoolName,
+            address: schoolAddress,
+            academicYear: academicYear,
+            logo: this.schoolInfo.logo // Keep existing logo
+        };
+
+        localStorage.setItem('schoolInfo', JSON.stringify(this.schoolInfo));
+        alert('School information saved successfully!');
+    }
+
+    previewSchoolLogo(event) {
+        const file = event.target.files[0];
+        const logoImg = document.getElementById('logoImg');
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoImg.src = e.target.result;
+                logoImg.style.display = 'block';
+
+                // Save logo to school info
+                schoolSystem.schoolInfo.logo = e.target.result;
+                localStorage.setItem('schoolInfo', JSON.stringify(schoolSystem.schoolInfo));
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    previewResult() {
+        const schoolInfo = this.schoolInfo;
+        if (!schoolInfo.name) {
+            alert('Please set up school information first');
+            return;
+        }
+
+        // Get the latest result for preview
+        const latestResult = this.studentResults[this.studentResults.length - 1];
+        if (!latestResult) {
+            alert('Please create a result first');
+            return;
+        }
+
+        // Create result preview window
+        const previewWindow = window.open('', '_blank', 'width=900,height=700');
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Student Result - ${latestResult.student_name}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .school-address {
+                        font-size: 14px;
+                        color: #666;
+                    }
+                    .academic-year {
+                        font-size: 16px;
+                        color: #3498db;
+                        margin-top: 5px;
+                    }
+                    .result-title {
+                        text-align: center;
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 20px 0;
+                        text-decoration: underline;
+                    }
+                    .student-info {
+                        display: table;
+                        width: 100%;
+                        margin: 20px 0;
+                        border-collapse: collapse;
+                    }
+                    .student-info td {
+                        padding: 8px;
+                        border: 1px solid #ddd;
+                    }
+                    .student-info .label {
+                        background: #f8f9fa;
+                        font-weight: bold;
+                        width: 30%;
+                    }
+                    .marks-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .marks-table th, .marks-table td {
+                        border: 1px solid #ddd;
+                        padding: 12px;
+                        text-align: center;
+                    }
+                    .marks-table th {
+                        background: #f8f9fa;
+                        font-weight: bold;
+                    }
+                    .marks-table .subject {
+                        text-align: left;
+                        font-weight: bold;
+                    }
+                    .summary-section {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                    }
+                    .summary-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                    }
+                    .summary-item {
+                        text-align: center;
+                        padding: 15px;
+                        background: white;
+                        border-radius: 5px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    .summary-item .value {
+                        font-size: 24px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .summary-item .label {
+                        font-size: 14px;
+                        color: #666;
+                        margin-top: 5px;
+                    }
+                    .grade {
+                        font-size: 32px;
+                        font-weight: bold;
+                        color: #27ae60;
+                        text-align: center;
+                        margin: 20px 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 1px solid #ddd;
+                        color: #666;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name}</div>
+                    <div class="school-address">${schoolInfo.address}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear}</div>
+                </div>
+
+                <div class="result-title">ACADEMIC PERFORMANCE REPORT</div>
+
+                <table class="student-info">
+                    <tr>
+                        <td class="label">Student Name:</td>
+                        <td>${latestResult.student_name}</td>
+                        <td class="label">Roll No:</td>
+                        <td>${latestResult.student_roll}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Class:</td>
+                        <td>${latestResult.class} - ${latestResult.section || 'N/A'}</td>
+                        <td class="label">Exam Type:</td>
+                        <td>${latestResult.exam_type}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Exam Date:</td>
+                        <td>${new Date(latestResult.exam_date).toLocaleDateString()}</td>
+                        <td class="label">Result Date:</td>
+                        <td>${new Date(latestResult.result_date).toLocaleDateString()}</td>
+                    </tr>
+                </table>
+
+                <table class="marks-table">
+                    <thead>
+                        <tr>
+                            <th class="subject">Subject</th>
+                            <th>Marks Obtained</th>
+                            <th>Maximum Marks</th>
+                            <th>Percentage</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${latestResult.subjects.map(subject => `
+                            <tr>
+                                <td class="subject">${subject.name}</td>
+                                <td>${subject.marks}</td>
+                                <td>${subject.maxMarks}</td>
+                                <td>${subject.percentage.toFixed(2)}%</td>
+                                <td>${this.getGradeLetter(subject.percentage)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="summary-section">
+                    <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">Final Result</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="value">${latestResult.total_marks.toFixed(2)}</div>
+                            <div class="label">Total Marks</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="value">${latestResult.total_max_marks}</div>
+                            <div class="label">Maximum Marks</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="value">${latestResult.overall_percentage.toFixed(2)}%</div>
+                            <div class="label">Overall Percentage</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="value">${latestResult.grade}</div>
+                            <div class="label">Final Grade</div>
+                        </div>
+                    </div>
+                    <div class="grade">${this.getGradeDescription(latestResult.grade)}</div>
+                </div>
+
+                <div class="footer">
+                    <p>This is a computer-generated report and does not require signature.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Result</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer;">Close Preview</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    getGradeLetter(percentage) {
+        if (percentage >= 90) return 'A+';
+        if (percentage >= 80) return 'A';
+        if (percentage >= 70) return 'B+';
+        if (percentage >= 60) return 'B';
+        if (percentage >= 50) return 'C+';
+        if (percentage >= 40) return 'C';
+        if (percentage >= 33) return 'D';
+        return 'F';
+    }
+
+    getGradeDescription(grade) {
+        const descriptions = {
+            'A+': 'OUTSTANDING',
+            'A': 'EXCELLENT',
+            'B+': 'VERY GOOD',
+            'B': 'GOOD',
+            'C+': 'SATISFACTORY',
+            'C': 'NEEDS IMPROVEMENT',
+            'D': 'PASS',
+            'F': 'FAIL'
+        };
+        return descriptions[grade] || 'NOT GRADED';
+    }
+
+    generateAllResults() {
+        if (this.studentResults.length === 0) {
+            alert('No results found to generate report');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>All Students Results Report</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .results-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .results-table th, .results-table td {
+                        border: 1px solid #ddd;
+                        padding: 12px;
+                        text-align: center;
+                    }
+                    .results-table th {
+                        background: #f8f9fa;
+                        font-weight: bold;
+                    }
+                    .student-name {
+                        text-align: left;
+                        font-weight: bold;
+                    }
+                    .grade {
+                        font-weight: bold;
+                        padding: 5px 10px;
+                        border-radius: 3px;
+                    }
+                    .grade-A+ { background: #d4edda; color: #155724; }
+                    .grade-A { background: #cce7ff; color: #004085; }
+                    .grade-B+ { background: #e2e3e5; color: #383d41; }
+                    .grade-B { background: #fff3cd; color: #856404; }
+                    .grade-C+ { background: #fce4d6; color: #721c24; }
+                    .grade-C { background: #f8d7da; color: #721c24; }
+                    .grade-D { background: #d1ecf1; color: #0c5460; }
+                    .grade-F { background: #f5c6cb; color: #721c24; }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                    <h2>All Students Results Report</h2>
+                    <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                </div>
+
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Roll No</th>
+                            <th>Class</th>
+                            <th>Exam Type</th>
+                            <th>Total Marks</th>
+                            <th>Percentage</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.studentResults.map(result => `
+                            <tr>
+                                <td class="student-name">${result.student_name}</td>
+                                <td>${result.student_roll}</td>
+                                <td>${result.class}</td>
+                                <td>${result.exam_type}</td>
+                                <td>${result.total_marks.toFixed(2)}</td>
+                                <td>${result.overall_percentage.toFixed(2)}%</td>
+                                <td><span class="grade grade-${result.grade}">${result.grade}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Report</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    loadResults() {
+        const resultsList = document.getElementById('resultsList');
+        if (resultsList) {
+            if (this.studentResults.length === 0) {
+                resultsList.innerHTML = `
+                    <div class="results-display">
+                        <p>No results created yet. Create your first result!</p>
+                    </div>
+                `;
+            } else {
+                resultsList.innerHTML = `
+                    <div class="results-display">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Roll No</th>
+                                    <th>Class</th>
+                                    <th>Exam Type</th>
+                                    <th>Percentage</th>
+                                    <th>Grade</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${this.studentResults.map(r => `
+                                    <tr>
+                                        <td>${r.student_name}</td>
+                                        <td>${r.student_roll}</td>
+                                        <td>${r.class}</td>
+                                        <td>${r.exam_type}</td>
+                                        <td>${r.overall_percentage.toFixed(2)}%</td>
+                                        <td>
+                                            <span class="status-badge status-${r.grade.toLowerCase()}">${r.grade}</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success" onclick="schoolSystem.previewResult('${r.id}')">View</button>
+                                            <button class="btn btn-sm btn-primary" onclick="schoolSystem.editResult('${r.id}')">Edit</button>
+                                            <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteResult('${r.id}')">Delete</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    editResult(id) {
+        // Implement edit logic
+        alert('Edit result ' + id);
+    }
+
+    deleteResult(id) {
+        this.studentResults = this.studentResults.filter(r => r.id !== id);
+        localStorage.setItem('studentResults', JSON.stringify(this.studentResults));
+        this.loadResults();
     }
 
     showAddAdmissionForm() {
