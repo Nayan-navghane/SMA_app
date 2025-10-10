@@ -10,6 +10,12 @@ class SchoolManagementSystem {
         this.examResults = JSON.parse(localStorage.getItem('examResults')) || [];
         this.feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
         this.studentResults = JSON.parse(localStorage.getItem('studentResults')) || [];
+        this.examTimeTable = JSON.parse(localStorage.getItem('examTimeTable')) || [];
+        this.timeTableInfo = JSON.parse(localStorage.getItem('timeTableInfo')) || {
+            title: '',
+            session: '',
+            instructions: ''
+        };
         this.schoolInfo = JSON.parse(localStorage.getItem('schoolInfo')) || {
             name: '',
             logo: '',
@@ -155,6 +161,8 @@ class SchoolManagementSystem {
             this.loadSchedules();
         } else if (sectionName === 'results') {
             this.loadResults();
+        } else if (sectionName === 'timetable') {
+            this.loadTimeTable();
         } else if (sectionName === 'admissions') {
             this.loadAdmissions();
         } else if (sectionName === 'exams') {
@@ -748,6 +756,8915 @@ class SchoolManagementSystem {
 
     hideAddScheduleForm() {
         document.getElementById('addScheduleFormContainer').style.display = 'none';
+    }
+
+    showAddTimeTableForm() {
+        document.getElementById('addTimeTableFormContainer').style.display = 'block';
+    }
+
+    hideAddTimeTableForm() {
+        document.getElementById('addTimeTableFormContainer').style.display = 'none';
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
+    }
+
+    loadSubjectsForTimeTable() {
+        const classSelect = document.getElementById('ttClass');
+        const subjectsSelection = document.getElementById('subjectsSelection');
+        if (!subjectsSelection) return;
+
+        const classValue = classSelect.value;
+        if (!classValue) {
+            subjectsSelection.innerHTML = '<p class="no-data">Select a class to load subjects</p>';
+            return;
+        }
+
+        // Get subjects for the selected class
+        const subjects = this.getSubjectsForClass(classValue);
+
+        let html = '<div class="subjects-checkbox-grid">';
+        subjects.forEach(subject => {
+            html += `
+                <div class="subject-checkbox-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="tt_subject" value="${subject}" checked>
+                        <span class="checkmark"></span>
+                        ${subject}
+                    </label>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        subjectsSelection.innerHTML = html;
+    }
+
+    handleTimeTableForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const classValue = formData.get('tt_class');
+        const examDate = formData.get('tt_exam_date');
+        const startTime = formData.get('tt_start_time');
+        const endTime = formData.get('tt_end_time');
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="tt_subject"]:checked')).map(cb => cb.value);
+
+        if (selectedSubjects.length === 0) {
+            alert('Please select at least one subject');
+            return;
+        }
+
+        // Create time table entries for each selected subject
+        const timeTableEntries = selectedSubjects.map((subject, index) => {
+            const examDateTime = new Date(examDate);
+            examDateTime.setDate(examDateTime.getDate() + index); // Spread exams across multiple days
+
+            return {
+                id: Date.now() + index,
+                class: classValue,
+                subject: subject,
+                exam_date: examDateTime.toISOString().split('T')[0],
+                start_time: startTime,
+                end_time: endTime,
+                duration: this.calculateDuration(startTime, endTime),
+                created_date: new Date().toISOString()
+            };
+        });
+
+        // Add entries to time table
+        this.examTimeTable.push(...timeTableEntries);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        e.target.reset();
+        this.loadTimeTable();
+        alert('Time table entries created successfully!');
+    }
+
+    calculateDuration(startTime, endTime) {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+        const diffMinutes = (end - start) / (1000 * 60);
+        return diffMinutes;
+    }
+
+    saveTimeTableInfo() {
+        const title = document.getElementById('timetableTitle').value;
+        const session = document.getElementById('examSession').value;
+        const instructions = document.getElementById('instructions').value;
+
+        this.timeTableInfo = {
+            title: title,
+            session: session,
+            instructions: instructions
+        };
+
+        localStorage.setItem('timeTableInfo', JSON.stringify(this.timeTableInfo));
+        alert('Time table information saved successfully!');
+    }
+
+    generateTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+        const timeTableInfo = this.timeTableInfo;
+
+        // Group entries by date
+        const groupedByDate = {};
+        this.examTimeTable.forEach(entry => {
+            if (!groupedByDate[entry.exam_date]) {
+                groupedByDate[entry.exam_date] = [];
+            }
+            groupedByDate[entry.exam_date].push(entry);
+        });
+
+        previewWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Exam Time Table</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        max-width: 1000px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 3px solid #333;
+                        padding-bottom: 20px;
+                        margin-bottom: 30px;
+                    }
+                    .school-logo {
+                        max-height: 80px;
+                        margin-bottom: 10px;
+                    }
+                    .school-name {
+                        font-size: 28px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        margin: 10px 0;
+                    }
+                    .timetable-title {
+                        font-size: 24px;
+                        color: #e74c3c;
+                        margin: 15px 0;
+                        text-decoration: underline;
+                    }
+                    .exam-info {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin: 20px 0;
+                        padding: 15px;
+                        background: #f8f9fa;
+                        border-radius: 5px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #495057;
+                    }
+                    .info-value {
+                        font-size: 18px;
+                        color: #2c3e50;
+                        margin-top: 5px;
+                    }
+                    .timetable-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                    }
+                    .timetable-table th, .timetable-table td {
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        text-align: center;
+                    }
+                    .timetable-table th {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        font-weight: bold;
+                    }
+                    .timetable-table tr:nth-child(even) {
+                        background: #f8f9fa;
+                    }
+                    .timetable-table tr:hover {
+                        background: #e3f2fd;
+                    }
+                    .date-header {
+                        background: #e9ecef !important;
+                        font-weight: bold;
+                        font-size: 16px;
+                        color: #2c3e50;
+                    }
+                    .subject-name {
+                        text-align: left;
+                        font-weight: bold;
+                        color: #2c3e50;
+                    }
+                    .instructions {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 5px;
+                    }
+                    .instructions h4 {
+                        color: #856404;
+                        margin-top: 0;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #ddd;
+                        color: #666;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; padding: 15px; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <div class="school-name">${schoolInfo.name || 'School Management System'}</div>
+                    <div class="school-address">${schoolInfo.address || ''}</div>
+                    <div class="academic-year">Academic Year: ${schoolInfo.academicYear || ''}</div>
+                </div>
+
+                <div class="timetable-title">${timeTableInfo.title || 'EXAM TIME TABLE'}</div>
+
+                <div class="exam-info">
+                    <div class="info-item">
+                        <div class="info-label">Exam Session</div>
+                        <div class="info-value">${timeTableInfo.session || 'Not Specified'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Total Subjects</div>
+                        <div class="info-value">${this.examTimeTable.length}</div>
+                    </div>
+                </div>
+
+                <table class="timetable-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr ${index === 0 ? `class="date-header"` : ''}>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td class="subject-name">${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} minutes</td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                ${timeTableInfo.instructions ? `
+                    <div class="instructions">
+                        <h4>Important Instructions:</h4>
+                        <p>${timeTableInfo.instructions.replace(/\n/g, '<br>')}</p>
+                    </div>
+                ` : ''}
+
+                <div class="footer">
+                    <p><strong>Generated by School Management System</strong></p>
+                    <p>This time table is subject to change. Students are advised to check for updates regularly.</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} | Time: ${new Date().toLocaleTimeString()}</p>
+                </div>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="margin-right: 10px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print Time Table</button>
+                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    previewTimeTable() {
+        if (this.examTimeTable.length === 0) {
+            alert('No time table entries found. Please create some entries first.');
+            return;
+        }
+
+        this.generateTimeTable();
+    }
+
+    printTimeTable() {
+        this.generateTimeTable();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadTimeTable() {
+        const timetableTable = document.getElementById('timetableTable');
+        const timetableInfo = document.getElementById('timetableInfo');
+
+        if (this.examTimeTable.length === 0) {
+            timetableTable.innerHTML = `
+                <div class="no-timetable">
+                    <p>No exam time table created yet.</p>
+                    <p>Create your first time table to get started!</p>
+                </div>
+            `;
+            timetableInfo.textContent = 'No time table created yet. Create your first time table!';
+        } else {
+            // Group entries by date for better display
+            const groupedByDate = {};
+            this.examTimeTable.forEach(entry => {
+                if (!groupedByDate[entry.exam_date]) {
+                    groupedByDate[entry.exam_date] = [];
+                }
+                groupedByDate[entry.exam_date].push(entry);
+            });
+
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Subject</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.keys(groupedByDate).sort().map(date => {
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const entries = groupedByDate[date];
+
+                            return entries.map((entry, index) => `
+                                <tr>
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${new Date(date).toLocaleDateString()}</td>` : ''}
+                                    ${index === 0 ? `<td rowspan="${entries.length}">${dayName}</td>` : ''}
+                                    <td>${entry.subject}</td>
+                                    <td>${entry.start_time}</td>
+                                    <td>${entry.end_time}</td>
+                                    <td>${entry.duration} min</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteTimeTableEntry('${entry.id}')">Remove</button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            timetableTable.innerHTML = html;
+            timetableInfo.textContent = `Time table with ${this.examTimeTable.length} exam(s) created successfully!`;
+        }
+    }
+
+    deleteTimeTableEntry(id) {
+        this.examTimeTable = this.examTimeTable.filter(entry => entry.id !== id);
+        localStorage.setItem('examTimeTable', JSON.stringify(this.examTimeTable));
+        this.loadTimeTable();
     }
 
     showAddResultForm() {
