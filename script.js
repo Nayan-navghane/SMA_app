@@ -83,6 +83,17 @@ class SchoolManagementSystem {
             staffForm.addEventListener('submit', (e) => this.handleStaffForm(e));
         }
 
+        const scheduleForm = document.getElementById('scheduleForm');
+        if (scheduleForm) {
+            scheduleForm.addEventListener('submit', (e) => this.handleScheduleForm(e));
+        }
+
+        // Schedule form dropdown listeners
+        const scheduleClassSelect = document.getElementById('scheduleClass');
+        if (scheduleClassSelect) {
+            scheduleClassSelect.addEventListener('change', () => this.loadSubjectsForSchedule());
+        }
+
         // Theme toggle
         const themeSelect = document.getElementById('theme');
         if (themeSelect) {
@@ -116,6 +127,8 @@ class SchoolManagementSystem {
             this.loadTeachers();
         } else if (sectionName === 'staff') {
             this.loadStaff();
+        } else if (sectionName === 'schedule') {
+            this.loadSchedules();
         } else if (sectionName === 'admissions') {
             this.loadAdmissions();
         } else if (sectionName === 'exams') {
@@ -401,6 +414,146 @@ class SchoolManagementSystem {
         }
     }
 
+    loadSchedules() {
+        const scheduleList = document.getElementById('scheduleList');
+        if (scheduleList) {
+            if (this.schedules.length === 0) {
+                scheduleList.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Class</th>
+                                <th>Day</th>
+                                <th>Period</th>
+                                <th>Subject</th>
+                                <th>Teacher</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="no-data">No schedules found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                scheduleList.innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Class</th>
+                                <th>Day</th>
+                                <th>Period</th>
+                                <th>Subject</th>
+                                <th>Teacher</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.schedules.map(s => `
+                                <tr>
+                                    <td>${s.class}</td>
+                                    <td>${s.day}</td>
+                                    <td>${s.period}</td>
+                                    <td>${s.subject}</td>
+                                    <td>${s.teacher_name}</td>
+                                    <td>${s.time}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" onclick="schoolSystem.editSchedule('${s.id}')">Edit</button>
+                                        <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteSchedule('${s.id}')">Delete</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+    }
+
+    loadTeachersForSchedule() {
+        const teacherSelect = document.getElementById('scheduleTeacher');
+        if (!teacherSelect) return;
+
+        // Clear existing options except the first one
+        while (teacherSelect.children.length > 1) {
+            teacherSelect.removeChild(teacherSelect.lastChild);
+        }
+
+        // Add all teachers to the dropdown
+        this.teachers.forEach(teacher => {
+            const option = document.createElement('option');
+            option.value = teacher.id;
+            option.textContent = `${teacher.name} (${teacher.subject})`;
+            teacherSelect.appendChild(option);
+        });
+    }
+
+    loadSubjectsForSchedule() {
+        const classSelect = document.getElementById('scheduleClass');
+        const subjectSelect = document.getElementById('scheduleSubject');
+        if (!classSelect || !subjectSelect) return;
+
+        // Clear existing options except the first one
+        while (subjectSelect.children.length > 1) {
+            subjectSelect.removeChild(subjectSelect.lastChild);
+        }
+
+        const classValue = classSelect.value;
+        if (classValue) {
+            // Add relevant subjects based on class
+            const subjects = this.getSubjectsForClass(classValue);
+            subjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                subjectSelect.appendChild(option);
+            });
+        }
+    }
+
+    handleScheduleForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const schedule = {
+            id: Date.now(),
+            class: formData.get('scheduleClass'),
+            day: formData.get('scheduleDay'),
+            period: formData.get('schedulePeriod'),
+            subject: formData.get('scheduleSubject'),
+            teacher_id: formData.get('scheduleTeacher'),
+            time: formData.get('scheduleTime'),
+            created_date: new Date().toISOString()
+        };
+
+        // Get teacher name for display
+        const teacher = this.teachers.find(t => t.id == schedule.teacher_id);
+        if (teacher) {
+            schedule.teacher_name = teacher.name;
+        }
+
+        this.schedules.push(schedule);
+        localStorage.setItem('schedules', JSON.stringify(this.schedules));
+        e.target.reset();
+        this.loadSchedules();
+        alert('Schedule added successfully!');
+    }
+
+    editSchedule(id) {
+        // Implement edit logic
+        alert('Edit schedule ' + id);
+    }
+
+    deleteSchedule(id) {
+        this.schedules = this.schedules.filter(s => s.id !== id);
+        localStorage.setItem('schedules', JSON.stringify(this.schedules));
+        this.loadSchedules();
+    }
+
     editStaff(id) {
         // Implement edit logic
         alert('Edit staff ' + id);
@@ -559,6 +712,16 @@ class SchoolManagementSystem {
 
     hideAddStaffForm() {
         document.getElementById('addStaffFormContainer').style.display = 'none';
+    }
+
+    showAddScheduleForm() {
+        document.getElementById('addScheduleFormContainer').style.display = 'block';
+        this.loadTeachersForSchedule();
+        this.loadSubjectsForSchedule();
+    }
+
+    hideAddScheduleForm() {
+        document.getElementById('addScheduleFormContainer').style.display = 'none';
     }
 
     showAddAdmissionForm() {
