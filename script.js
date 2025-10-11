@@ -726,6 +726,9 @@ class SchoolManagementSystem {
 
     showAddStudentForm() {
         document.getElementById('addStudentFormContainer').style.display = 'block';
+        // Reset form when opening
+        const form = document.getElementById('studentForm');
+        if (form) form.reset();
     }
 
     hideAddStudentForm() {
@@ -10331,6 +10334,9 @@ class SchoolManagementSystem {
 
     showAddAdmissionForm() {
         document.getElementById('addAdmissionFormContainer').style.display = 'block';
+        // Reset form when opening
+        const form = document.getElementById('admissionForm');
+        if (form) form.reset();
     }
 
     hideAddAdmissionForm() {
