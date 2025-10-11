@@ -38,20 +38,54 @@ class SchoolManagementSystem {
     }
 
     init() {
+        console.log('School Management System initializing...');
         this.setupEventListeners();
         this.loadDashboardData();
         this.showSection('dashboard');
 
-        // Add direct event listener to New Admission button for debugging
+        // Add direct event listeners to all dashboard buttons
+        this.setupDashboardButtons();
+        console.log('Dashboard buttons setup completed');
+    }
+
+    setupDashboardButtons() {
+        // New Admission button
         const newAdmissionBtn = document.querySelector('button[onclick="schoolSystem.showAddAdmissionForm()"]');
         if (newAdmissionBtn) {
-            newAdmissionBtn.addEventListener('click', function() {
-                console.log('Button clicked directly');
-                schoolSystem.showAddAdmissionForm();
+            newAdmissionBtn.addEventListener('click', (e) => {
+                console.log('New Admission button clicked');
+                e.preventDefault();
+                this.showAddAdmissionForm();
             });
-            console.log('Direct event listener added to New Admission button');
+            console.log('New Admission button event listener added');
         } else {
             console.error('New Admission button not found');
+        }
+
+        // Add Student button
+        const addStudentBtn = document.querySelector('button[onclick="schoolSystem.showAddStudentForm()"]');
+        if (addStudentBtn) {
+            addStudentBtn.addEventListener('click', (e) => {
+                console.log('Add Student button clicked');
+                e.preventDefault();
+                this.showAddStudentForm();
+            });
+            console.log('Add Student button event listener added');
+        } else {
+            console.error('Add Student button not found');
+        }
+
+        // Mark Attendance button
+        const markAttendanceBtn = document.querySelector('button[onclick="schoolSystem.showSection(\'attendance\')"]');
+        if (markAttendanceBtn) {
+            markAttendanceBtn.addEventListener('click', (e) => {
+                console.log('Mark Attendance button clicked');
+                e.preventDefault();
+                this.showSection('attendance');
+            });
+            console.log('Mark Attendance button event listener added');
+        } else {
+            console.error('Mark Attendance button not found');
         }
     }
 
@@ -10346,7 +10380,6 @@ class SchoolManagementSystem {
 
     showAddAdmissionForm() {
         console.log('showAddAdmissionForm called');
-        alert('New Admission button clicked!'); // Temporary alert to confirm button works
         const container = document.getElementById('addAdmissionFormContainer');
         if (container) {
             container.style.display = 'block';
@@ -10359,7 +10392,6 @@ class SchoolManagementSystem {
             }
         } else {
             console.error('Admission form container not found');
-            alert('Error: Admission form container not found!');
         }
     }
 
