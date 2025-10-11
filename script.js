@@ -41,6 +41,18 @@ class SchoolManagementSystem {
         this.setupEventListeners();
         this.loadDashboardData();
         this.showSection('dashboard');
+
+        // Add direct event listener to New Admission button for debugging
+        const newAdmissionBtn = document.querySelector('button[onclick="schoolSystem.showAddAdmissionForm()"]');
+        if (newAdmissionBtn) {
+            newAdmissionBtn.addEventListener('click', function() {
+                console.log('Button clicked directly');
+                schoolSystem.showAddAdmissionForm();
+            });
+            console.log('Direct event listener added to New Admission button');
+        } else {
+            console.error('New Admission button not found');
+        }
     }
 
     setupEventListeners() {
@@ -10333,10 +10345,22 @@ class SchoolManagementSystem {
     }
 
     showAddAdmissionForm() {
-        document.getElementById('addAdmissionFormContainer').style.display = 'block';
-        // Reset form when opening
-        const form = document.getElementById('admissionForm');
-        if (form) form.reset();
+        console.log('showAddAdmissionForm called');
+        alert('New Admission button clicked!'); // Temporary alert to confirm button works
+        const container = document.getElementById('addAdmissionFormContainer');
+        if (container) {
+            container.style.display = 'block';
+            console.log('Admission form container shown');
+            // Reset form when opening
+            const form = document.getElementById('admissionForm');
+            if (form) {
+                form.reset();
+                console.log('Admission form reset');
+            }
+        } else {
+            console.error('Admission form container not found');
+            alert('Error: Admission form container not found!');
+        }
     }
 
     hideAddAdmissionForm() {
