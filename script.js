@@ -382,25 +382,80 @@ class SchoolManagementSystem {
     handleAdmissionForm(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
+
+        // Get selected subjects
+        const selectedSubjects = Array.from(document.querySelectorAll('input[name="subjects[]"]:checked')).map(cb => cb.value);
+
         const admission = {
             id: Date.now().toString(),
-            application_id: formData.get('application_id'),
-            applicant_name: formData.get('applicant_name'),
+            // Student Information
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            full_name: formData.get('first_name') + ' ' + formData.get('last_name'),
             dob: formData.get('dob'),
+            gender: formData.get('gender'),
+            nationality: formData.get('nationality'),
+            religion: formData.get('religion'),
+
+            // Residential Address
+            residential_address: formData.get('residential_address'),
+            city: formData.get('city'),
+            state: formData.get('state'),
+            zip_code: formData.get('zip_code'),
+
+            // Academic Information
             applying_class: formData.get('applying_class'),
-            parent_name: formData.get('parent_name'),
-            parent_contact: formData.get('parent_contact'),
-            address: formData.get('address'),
+            academic_year: formData.get('academic_year'),
             previous_school: formData.get('previous_school'),
-            documents_status: formData.get('documents_status'),
+            previous_grade: formData.get('previous_grade'),
+
+            // Subjects Interested In
+            subjects_interested: selectedSubjects,
+
+            // Parent/Guardian Information
+            father_name: formData.get('father_name'),
+            mother_name: formData.get('mother_name'),
+            father_phone: formData.get('father_phone'),
+            mother_phone: formData.get('mother_phone'),
+            father_email: formData.get('father_email'),
+            mother_email: formData.get('mother_email'),
+            father_occupation: formData.get('father_occupation'),
+            mother_occupation: formData.get('mother_occupation'),
+            emergency_contact: formData.get('emergency_contact'),
+            emergency_relationship: formData.get('emergency_relationship'),
+
+            // Medical Information
+            blood_group: formData.get('blood_group'),
+            allergies: formData.get('allergies'),
+            medical_conditions: formData.get('medical_conditions'),
+            current_medications: formData.get('current_medications'),
+            family_doctor: formData.get('family_doctor'),
+            doctor_phone: formData.get('doctor_phone'),
+            doctor_address: formData.get('doctor_address'),
+
+            // Additional Information
+            special_needs: formData.get('special_needs'),
+            extracurricular_interests: formData.get('extracurricular_interests'),
+            achievements: formData.get('achievements'),
+            additional_info: formData.get('additional_info'),
+            referral_source: formData.get('referral_source'),
+
+            // Terms and Conditions
+            terms_accepted: formData.get('terms_accepted') === 'on',
+            updates_subscribed: formData.get('updates_subscribed') === 'on',
+
+            // System fields
+            application_id: 'ADM' + Date.now(),
+            documents_status: 'pending',
             status: 'pending',
             submission_date: new Date().toISOString()
         };
+
         this.admissions.push(admission);
         localStorage.setItem('admissions', JSON.stringify(this.admissions));
         e.target.reset();
         this.loadAdmissions();
-        alert('Admission application submitted successfully!');
+        alert('Admission application submitted successfully! Application ID: ' + admission.application_id);
 
         // Update dashboard
         this.loadDashboardData();
