@@ -244,6 +244,62 @@
             </div>
         </div>
 
+        <!-- Main Salary Management Buttons -->
+        <div class="salary-form">
+            <h2>Salary Management</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+                <button type="button" class="btn btn-primary" onclick="showPaySalarySection()">
+                    💰 Pay Salary
+                </button>
+                <button type="button" class="btn btn-success" onclick="showSalarySlipSection()">
+                    🧾 Salary Paid Slip
+                </button>
+                <button type="button" class="btn btn-primary" onclick="showSalarySheet()">
+                    📋 Salary Sheet
+                </button>
+                <button type="button" class="btn btn-success" onclick="generateSalaryReport()">
+                    📊 Salary Report
+                </button>
+            </div>
+        </div>
+
+        <!-- Pay Salary Section -->
+        <div id="paySalarySection" class="salary-form" style="display: none;">
+            <h2>Pay Employee Salaries</h2>
+            <div style="margin-bottom: 20px;">
+                <label for="payEmployeeSelect" style="display: block; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Select Employee:</label>
+                <select id="payEmployeeSelect" style="width: 100%; padding: 12px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 1rem;">
+                    <option value="">Choose Employee</option>
+                </select>
+            </div>
+            <div id="pendingSalariesList" style="margin: 20px 0;"></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <button type="button" class="btn btn-success" onclick="markSalaryAsPaid()">Mark as Paid</button>
+                <button type="button" class="btn btn-primary" onclick="showPaySalarySection()">Back</button>
+            </div>
+        </div>
+
+        <!-- Salary Slip Section -->
+        <div id="salarySlipSection" class="salary-form" style="display: none;">
+            <h2>Generate Salary Slip</h2>
+            <div style="margin-bottom: 20px;">
+                <label for="slipEmployeeSelect" style="display: block; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Select Employee:</label>
+                <select id="slipEmployeeSelect" style="width: 100%; padding: 12px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 1rem;">
+                    <option value="">Choose Employee</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label for="slipMonthSelect" style="display: block; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Select Month:</label>
+                <select id="slipMonthSelect" style="width: 100%; padding: 12px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 1rem;">
+                    <option value="">Choose Month</option>
+                </select>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <button type="button" class="btn btn-success" onclick="generateSalarySlip()">Generate Slip</button>
+                <button type="button" class="btn btn-primary" onclick="showSalarySlipSection()">Back</button>
+            </div>
+        </div>
+
         <!-- Add Salary Form -->
         <div class="salary-form">
             <h2>Add New Salary Record</h2>
@@ -644,6 +700,412 @@
             setTimeout(() => {
                 messageDiv.remove();
             }, 5000);
+        }
+
+        // Navigation Functions
+        function showPaySalarySection() {
+            // Hide other sections
+            document.querySelectorAll('.salary-form').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Show pay salary section
+            document.getElementById('paySalarySection').style.display = 'block';
+            populatePayEmployeeDropdown();
+            showPendingSalaries();
+        }
+
+        function showSalarySlipSection() {
+            // Hide other sections
+            document.querySelectorAll('.salary-form').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Show salary slip section
+            document.getElementById('salarySlipSection').style.display = 'block';
+            populateSlipEmployeeDropdown();
+            populateSlipMonthDropdown();
+        }
+
+        function showSalarySheet() {
+            if (salaries.length === 0) {
+                alert('No salary records found to display salary sheet');
+                return;
+            }
+
+            const sheetWindow = window.open('', '_blank', 'width=1200,height=800');
+            sheetWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Salary Sheet</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                        .summary { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+                        .salary-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                        .salary-table th, .salary-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+                        .salary-table th { background: #f8f9fa; font-weight: bold; }
+                        .employee-name { text-align: left; font-weight: bold; }
+                        .total-row { background: #e9ecef; font-weight: bold; }
+                        @media print { body { margin: 0; } .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>📋 Salary Sheet</h1>
+                        <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                    </div>
+
+                    <div class="summary">
+                        <strong>Summary:</strong> Total Records: ${salaries.length} |
+                        Total Amount: ₹${salaries.reduce((sum, s) => sum + s.total_salary, 0).toFixed(2)} |
+                        Pending: ${salaries.filter(s => s.status !== 'paid').length} |
+                        Paid: ${salaries.filter(s => s.status === 'paid').length}
+                    </div>
+
+                    <table class="salary-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Month/Year</th>
+                                <th>Base Salary</th>
+                                <th>Allowance</th>
+                                <th>Overtime</th>
+                                <th>Bonus</th>
+                                <th>Deductions</th>
+                                <th>Tax</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Payment Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${salaries.map(salary => `
+                                <tr>
+                                    <td class="employee-name">${salary.employee_name}</td>
+                                    <td>${salary.employee_department}</td>
+                                    <td>${salary.month} ${salary.year}</td>
+                                    <td>₹${salary.base_salary.toFixed(2)}</td>
+                                    <td>₹${(salary.allowance || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.overtime || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.bonus || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.deductions || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.tax_deduction || 0).toFixed(2)}</td>
+                                    <td>₹${salary.total_salary.toFixed(2)}</td>
+                                    <td><span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; ${salary.status === 'paid' ? 'background: #d1fae5; color: #065f46;' : 'background: #fff3cd; color: #856404;'}">${salary.status}</span></td>
+                                    <td>${salary.payment_date || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                                <td colspan="3"><strong>TOTAL</strong></td>
+                                <td><strong>₹${salaries.reduce((sum, s) => sum + s.base_salary, 0).toFixed(2)}</strong></td>
+                                <td><strong>₹${salaries.reduce((sum, s) => sum + (s.allowance || 0), 0).toFixed(2)}</strong></td>
+                                <td><strong>₹${salaries.reduce((sum, s) => sum + (s.overtime || 0), 0).toFixed(2)}</strong></td>
+                                <td><strong>₹${salaries.reduce((sum, s) => sum + (s.bonus || 0), 0).toFixed(2)}</strong></td>
+                                <td><strong>₹${salaries.reduce((sum, s) => sum + (s.deductions || 0), 0).toFixed(2)}</strong></td>
+                                <td><strong>₹${salaries.reduce((sum, s) => sum + (s.tax_deduction || 0), 0).toFixed(2)}</strong></td>
+                                <td><strong>₹${salaries.reduce((sum, s) => sum + s.total_salary, 0).toFixed(2)}</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="no-print" style="text-align: center; margin-top: 30px;">
+                        <button onclick="window.print()">Print Salary Sheet</button>
+                        <button onclick="window.close()">Close</button>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        function populatePayEmployeeDropdown() {
+            const select = document.getElementById('payEmployeeSelect');
+            select.innerHTML = '<option value="">Choose Employee</option>';
+
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.textContent = `${emp.name} (${emp.department})`;
+                select.appendChild(option);
+            });
+        }
+
+        function populateSlipEmployeeDropdown() {
+            const select = document.getElementById('slipEmployeeSelect');
+            select.innerHTML = '<option value="">Choose Employee</option>';
+
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.textContent = `${emp.name} (${emp.department})`;
+                select.appendChild(option);
+            });
+        }
+
+        function populateSlipMonthDropdown() {
+            const select = document.getElementById('slipMonthSelect');
+            select.innerHTML = '<option value="">Choose Month</option>';
+
+            const months = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                select.appendChild(option);
+            });
+        }
+
+        function showPendingSalaries() {
+            const selectedEmployeeId = document.getElementById('payEmployeeSelect').value;
+            const pendingList = document.getElementById('pendingSalariesList');
+
+            if (!selectedEmployeeId) {
+                pendingList.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">Please select an employee to view pending salaries.</p>';
+                return;
+            }
+
+            const employeeSalaries = salaries.filter(s => s.employee_id == selectedEmployeeId && s.status !== 'paid');
+
+            if (employeeSalaries.length === 0) {
+                pendingList.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No pending salaries for this employee.</p>';
+                return;
+            }
+
+            let html = '<h4>Pending Salaries:</h4>';
+            html += '<div style="display: grid; gap: 10px; margin: 15px 0;">';
+
+            employeeSalaries.forEach(salary => {
+                html += `
+                    <div style="padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <strong>${salary.month} ${salary.year}</strong>
+                            <span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; background: #fff3cd; color: #856404;">${salary.status}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                            <div><small>Base Salary: ₹${salary.base_salary.toFixed(2)}</small></div>
+                            <div><small>Allowance: ₹${(salary.allowance || 0).toFixed(2)}</small></div>
+                            <div><small>Overtime: ₹${(salary.overtime || 0).toFixed(2)}</small></div>
+                            <div><small>Bonus: ₹${(salary.bonus || 0).toFixed(2)}</small></div>
+                            <div><small>Deductions: ₹${(salary.deductions || 0).toFixed(2)}</small></div>
+                            <div><small>Tax: ₹${(salary.tax_deduction || 0).toFixed(2)}</small></div>
+                        </div>
+                        <div style="text-align: right; margin-top: 10px;">
+                            <strong>Total: ₹${salary.total_salary.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            pendingList.innerHTML = html;
+        }
+
+        function markSalaryAsPaid() {
+            const selectedEmployeeId = document.getElementById('payEmployeeSelect').value;
+
+            if (!selectedEmployeeId) {
+                alert('Please select an employee');
+                return;
+            }
+
+            const employeeSalaries = salaries.filter(s => s.employee_id == selectedEmployeeId && s.status !== 'paid');
+
+            if (employeeSalaries.length === 0) {
+                alert('No pending salaries found for this employee');
+                return;
+            }
+
+            // Mark all pending salaries as paid
+            employeeSalaries.forEach(salary => {
+                salary.status = 'paid';
+                salary.paid_date = new Date().toISOString();
+            });
+
+            localStorage.setItem('salaries', JSON.stringify(salaries));
+
+            showMessage(`Marked ${employeeSalaries.length} salary record(s) as paid!`, 'success');
+            updateDashboard();
+            loadRecentSalaries();
+            showPendingSalaries();
+        }
+
+        function generateSalarySlip() {
+            const employeeId = document.getElementById('slipEmployeeSelect').value;
+            const month = document.getElementById('slipMonthSelect').value;
+
+            if (!employeeId || !month) {
+                alert('Please select both employee and month');
+                return;
+            }
+
+            const salaryRecord = salaries.find(s =>
+                s.employee_id == employeeId &&
+                s.month === month &&
+                s.status === 'paid'
+            );
+
+            if (!salaryRecord) {
+                alert('No paid salary record found for the selected employee and month');
+                return;
+            }
+
+            const employee = employees.find(emp => emp.id == employeeId);
+
+            const slipWindow = window.open('', '_blank', 'width=800,height=1000');
+            slipWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Salary Slip - ${employee.name}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .slip-container {
+                            max-width: 600px;
+                            margin: 0 auto;
+                            border: 2px solid #333;
+                            padding: 20px;
+                            background: #fff;
+                        }
+                        .header {
+                            text-align: center;
+                            border-bottom: 2px solid #333;
+                            padding-bottom: 20px;
+                            margin-bottom: 20px;
+                        }
+                        .company-info {
+                            margin-bottom: 30px;
+                        }
+                        .employee-info {
+                            margin-bottom: 20px;
+                        }
+                        .salary-details {
+                            margin: 20px 0;
+                        }
+                        .salary-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 15px 0;
+                        }
+                        .salary-table th, .salary-table td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        .salary-table th {
+                            background: #f8f9fa;
+                            font-weight: bold;
+                            width: 60%;
+                        }
+                        .total-row {
+                            background: #e9ecef;
+                            font-weight: bold;
+                        }
+                        .footer {
+                            margin-top: 40px;
+                            text-align: center;
+                            font-size: 0.9em;
+                            color: #666;
+                        }
+                        .signature {
+                            margin-top: 60px;
+                            text-align: right;
+                        }
+                        @media print {
+                            body { margin: 0; }
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="slip-container">
+                        <div class="header">
+                            <h1>🧾 Salary Slip</h1>
+                            <p>Salary Management System</p>
+                        </div>
+
+                        <div class="company-info">
+                            <h3>ABC Educational Institute</h3>
+                            <p>123 Education Street, Knowledge City</p>
+                            <p>Phone: (123) 456-7890 | Email: info@abc.edu</p>
+                        </div>
+
+                        <div class="employee-info">
+                            <h4>Employee Details:</h4>
+                            <p><strong>Name:</strong> ${employee.name}</p>
+                            <p><strong>Employee ID:</strong> ${employee.id}</p>
+                            <p><strong>Department:</strong> ${employee.department}</p>
+                            <p><strong>Period:</strong> ${salaryRecord.month} ${salaryRecord.year}</p>
+                        </div>
+
+                        <div class="salary-details">
+                            <h4>Salary Breakdown:</h4>
+                            <table class="salary-table">
+                                <tr>
+                                    <th>Component</th>
+                                    <th>Amount (₹)</th>
+                                </tr>
+                                <tr>
+                                    <td>Base Salary</td>
+                                    <td>${salaryRecord.base_salary.toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Allowance</td>
+                                    <td>${(salaryRecord.allowance || 0).toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Overtime Pay</td>
+                                    <td>${(salaryRecord.overtime || 0).toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Bonus</td>
+                                    <td>${(salaryRecord.bonus || 0).toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Deductions</td>
+                                    <td>-${(salaryRecord.deductions || 0).toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Tax Deduction</td>
+                                    <td>-${(salaryRecord.tax_deduction || 0).toFixed(2)}</td>
+                                </tr>
+                                <tr class="total-row">
+                                    <td><strong>Total Salary</strong></td>
+                                    <td><strong>${salaryRecord.total_salary.toFixed(2)}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="employee-info">
+                            <p><strong>Payment Date:</strong> ${salaryRecord.payment_date || 'N/A'}</p>
+                            <p><strong>Status:</strong> <span style="color: #065f46; font-weight: bold;">PAID</span></p>
+                            ${salaryRecord.notes ? `<p><strong>Notes:</strong> ${salaryRecord.notes}</p>` : ''}
+                        </div>
+
+                        <div class="signature">
+                            <p>Authorized Signature</p>
+                            <p>Date: ${new Date().toLocaleDateString()}</p>
+                        </div>
+
+                        <div class="footer">
+                            <p>This is a computer-generated salary slip.</p>
+                            <p>Generated on: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                        </div>
+                    </div>
+
+                    <div class="no-print" style="text-align: center; margin-top: 20px;">
+                        <button onclick="window.print()">Print Salary Slip</button>
+                        <button onclick="window.close()">Close</button>
+                    </div>
+                </body>
+                </html>
+            `);
         }
 
         // Initialize when page loads
