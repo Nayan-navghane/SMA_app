@@ -11448,43 +11448,51 @@ End of Paper
         document.body.classList = theme;
     }
 
-    // Salary Management Methods
+    // Enhanced Salary Management Methods
     showAddSalaryForm() {
         document.getElementById('addSalaryFormContainer').style.display = 'block';
         this.loadEmployeesForSalary();
         this.setDefaultSalaryDates();
+        this.setupSalaryFormValidation();
     }
 
     hideAddSalaryForm() {
         document.getElementById('addSalaryFormContainer').style.display = 'none';
+        this.clearSalaryFormValidation();
     }
 
     showPaySalaryForm() {
         document.getElementById('paySalaryFormContainer').style.display = 'block';
         this.loadEmployeesForPayment();
+        this.setupPaymentFormValidation();
     }
 
     hidePaySalaryForm() {
         document.getElementById('paySalaryFormContainer').style.display = 'none';
+        this.clearPaymentFormValidation();
     }
 
     showSalarySheetForm() {
         document.getElementById('salarySheetFormContainer').style.display = 'block';
         this.setDefaultSalarySheetDates();
+        this.setupSheetFormValidation();
     }
 
     hideSalarySheetForm() {
         document.getElementById('salarySheetFormContainer').style.display = 'none';
+        this.clearSheetFormValidation();
     }
 
     showSalaryReportForm() {
         document.getElementById('salaryReportFormContainer').style.display = 'block';
         this.loadEmployeesForReport();
         this.setDefaultReportDates();
+        this.setupReportFormValidation();
     }
 
     hideSalaryReportForm() {
         document.getElementById('salaryReportFormContainer').style.display = 'none';
+        this.clearReportFormValidation();
     }
 
     loadEmployeesForSalary() {
@@ -12232,6 +12240,365 @@ End of Paper
         this.salaries = this.salaries.filter(s => s.id !== id);
         localStorage.setItem('salaries', JSON.stringify(this.salaries));
         this.loadSalaries();
+    }
+
+    // Form Validation Methods
+    setupSalaryFormValidation() {
+        const form = document.getElementById('addSalaryForm');
+        if (!form) return;
+
+        // Add real-time validation
+        const requiredFields = ['salaryEmployee', 'salaryMonth', 'salaryYear', 'baseSalary', 'paymentDate'];
+        const numericFields = ['baseSalary', 'allowance', 'deductions', 'overtime', 'bonus', 'taxDeduction'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateSalaryField(fieldId));
+                field.addEventListener('input', () => this.clearFieldError(fieldId));
+            }
+        });
+
+        numericFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', () => {
+                    this.validateNumericField(fieldId);
+                    if (fieldId === 'baseSalary' || fieldId === 'allowance' || fieldId === 'deductions' ||
+                        fieldId === 'overtime' || fieldId === 'bonus' || fieldId === 'taxDeduction') {
+                        this.calculateTotalSalary();
+                    }
+                });
+            }
+        });
+
+        // Add form submit validation
+        form.addEventListener('submit', (e) => {
+            if (!this.validateSalaryForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    clearSalaryFormValidation() {
+        const errorElements = document.querySelectorAll('.salary-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+    }
+
+    validateSalaryField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        switch(fieldId) {
+            case 'salaryEmployee':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select an employee';
+                }
+                break;
+            case 'salaryMonth':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a month';
+                }
+                break;
+            case 'salaryYear':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a year';
+                }
+                break;
+            case 'baseSalary':
+                const baseSalary = parseFloat(field.value);
+                if (!field.value || isNaN(baseSalary) || baseSalary < 0) {
+                    isValid = false;
+                    errorMessage = 'Please enter a valid base salary (₹0 or more)';
+                }
+                break;
+            case 'paymentDate':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a payment date';
+                } else {
+                    const selectedDate = new Date(field.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (selectedDate < today) {
+                        isValid = false;
+                        errorMessage = 'Payment date cannot be in the past';
+                    }
+                }
+                break;
+        }
+
+        this.displayFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    validateNumericField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        const value = parseFloat(field.value);
+        let isValid = true;
+        let errorMessage = '';
+
+        if (field.value && (isNaN(value) || value < 0)) {
+            isValid = false;
+            errorMessage = 'Please enter a valid amount (₹0 or more)';
+        }
+
+        this.displayFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    displayFieldError(fieldId, errorMessage) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        // Remove existing error
+        const existingError = field.parentNode.querySelector('.salary-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        field.classList.remove('invalid-field');
+
+        if (errorMessage) {
+            field.classList.add('invalid-field');
+            const errorElement = document.createElement('div');
+            errorElement.className = 'salary-error';
+            errorElement.style.color = '#dc3545';
+            errorElement.style.fontSize = '12px';
+            errorElement.style.marginTop = '5px';
+            errorElement.textContent = errorMessage;
+            field.parentNode.appendChild(errorElement);
+        }
+    }
+
+    clearFieldError(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        const errorElement = field.parentNode.querySelector('.salary-error');
+        if (errorElement) {
+            errorElement.remove();
+        }
+        field.classList.remove('invalid-field');
+    }
+
+    validateSalaryForm() {
+        const requiredFields = ['salaryEmployee', 'salaryMonth', 'salaryYear', 'baseSalary', 'paymentDate'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validateSalaryField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        // Validate numeric fields
+        const numericFields = ['allowance', 'deductions', 'overtime', 'bonus', 'taxDeduction'];
+        numericFields.forEach(fieldId => {
+            if (!this.validateNumericField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
+    }
+
+    setupPaymentFormValidation() {
+        const form = document.getElementById('paySalaryForm');
+        if (!form) return;
+
+        const requiredFields = ['payEmployee', 'paymentMethod'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validatePaymentField(fieldId));
+                field.addEventListener('change', () => this.clearFieldError(fieldId));
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            if (!this.validatePaymentForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    clearPaymentFormValidation() {
+        const errorElements = document.querySelectorAll('.payment-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+    }
+
+    validatePaymentField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        switch(fieldId) {
+            case 'payEmployee':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select an employee';
+                }
+                break;
+            case 'paymentMethod':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a payment method';
+                }
+                break;
+        }
+
+        this.displayFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    validatePaymentForm() {
+        const requiredFields = ['payEmployee', 'paymentMethod'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validatePaymentField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        // Check if at least one salary is selected
+        const checkboxes = document.querySelectorAll('input[name^="pending_salary_"]:checked');
+        if (checkboxes.length === 0) {
+            alert('Please select at least one salary to pay');
+            isFormValid = false;
+        }
+
+        return isFormValid;
+    }
+
+    setupSheetFormValidation() {
+        const form = document.getElementById('salarySheetForm');
+        if (!form) return;
+
+        const requiredFields = ['sheetMonth', 'sheetYear'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateSheetField(fieldId));
+                field.addEventListener('change', () => this.clearFieldError(fieldId));
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            if (!this.validateSheetForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    clearSheetFormValidation() {
+        const errorElements = document.querySelectorAll('.sheet-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+    }
+
+    validateSheetField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        if (!field.value) {
+            isValid = false;
+            errorMessage = `Please select a ${fieldId === 'sheetMonth' ? 'month' : 'year'}`;
+        }
+
+        this.displayFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    validateSheetForm() {
+        const requiredFields = ['sheetMonth', 'sheetYear'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validateSheetField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
+    }
+
+    setupReportFormValidation() {
+        const form = document.getElementById('salaryReportForm');
+        if (!form) return;
+
+        const requiredFields = ['reportType', 'reportYear'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateReportField(fieldId));
+                field.addEventListener('change', () => this.clearFieldError(fieldId));
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            if (!this.validateReportForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    clearReportFormValidation() {
+        const errorElements = document.querySelectorAll('.report-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+    }
+
+    validateReportField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        if (!field.value) {
+            isValid = false;
+            errorMessage = `Please select a ${fieldId === 'reportType' ? 'report type' : 'year'}`;
+        }
+
+        this.displayFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    validateReportForm() {
+        const requiredFields = ['reportType', 'reportYear'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validateReportField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
     }
 }
 

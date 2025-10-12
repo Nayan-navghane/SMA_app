@@ -1,4 +1,4 @@
-tconst express = require('express');
+const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -47,7 +47,7 @@ function initializeDatabase() {
             name TEXT NOT NULL,
             photo_path TEXT,
             dob DATE,
-            class TEXT,
+            class_name TEXT,
             section TEXT,
             roll_no TEXT,
             parent_name TEXT,
@@ -197,7 +197,7 @@ app.get('/', (req, res) => {
 
 // API Routes - Students
 app.get('/api/students', (req, res) => {
-    db.all('SELECT * FROM students ORDER BY class, roll_no', (err, rows) => {
+    db.all('SELECT * FROM students ORDER BY class_name, roll_no', (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -210,7 +210,34 @@ app.post('/api/students', upload.single('photo'), (req, res) => {
     const { name, dob, class: studentClass, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact } = req.body;
     const photo_path = req.file ? req.file.path : null;
     const student_id = `STU${Date.now()}`;
-    const stmt = db.prepare('INSERT INTO students (student_id, name, photo_path, dob, class, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const stmt = db.prepare('INSERT INTO students (student_id, name, photo_path, dob, class_name, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(student_id, name, photo_path, dob, studentClass, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact, function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ id: this.lastID, student_id });
+    });
+    stmt.finalize();
+});
+
+// API Routes - Students
+app.get('/api/students', (req, res) => {
+    db.all('SELECT * FROM students ORDER BY class_name, roll_no', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
+
+app.post('/api/students', upload.single('photo'), (req, res) => {
+    const { name, dob, class: studentClass, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact } = req.body;
+    const photo_path = req.file ? req.file.path : null;
+    const student_id = `STU${Date.now()}`;
+    const stmt = db.prepare('INSERT INTO students (student_id, name, photo_path, dob, class_name, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+
     stmt.run(student_id, name, photo_path, dob, studentClass, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact, function(err) {
         if (err) {
             res.status(500).json({ error: err.message });
@@ -225,7 +252,7 @@ app.put('/api/students/:id', upload.single('photo'), (req, res) => {
     const id = req.params.id;
     const { name, dob, class: studentClass, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact } = req.body;
     const photo_path = req.file ? req.file.path : null;
-    let sql = 'UPDATE students SET name = ?, dob = ?, class = ?, section = ?, roll_no = ?, parent_name = ?, parent_contact = ?, address = ?, aadhar = ?, blood_group = ?, emergency_contact = ?, updated_at = CURRENT_TIMESTAMP';
+    let sql = 'UPDATE students SET name = ?, dob = ?, class_name = ?, section = ?, roll_no = ?, parent_name = ?, parent_contact = ?, address = ?, aadhar = ?, blood_group = ?, emergency_contact = ?, updated_at = CURRENT_TIMESTAMP';
     let params = [name, dob, studentClass, section, roll_no, parent_name, parent_contact, address, aadhar, blood_group, emergency_contact];
     if (photo_path) {
         sql += ', photo_path = ?';
@@ -264,7 +291,7 @@ app.delete('/api/students/:id', (req, res) => {
 // Search students by class
 app.get('/api/students/class/:class', (req, res) => {
     const { class: studentClass } = req.params;
-    db.all('SELECT * FROM students WHERE class = ? ORDER BY roll_no', [studentClass], (err, rows) => {
+    db.all('SELECT * FROM students WHERE class_name = ? ORDER BY roll_no', [studentClass], (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
