@@ -1384,19 +1384,317 @@
             <div id="salary" class="section">
                 <h2>Salary Management</h2>
                 <div class="salary-actions">
+                    <button class="btn btn-primary" onclick="schoolSystem.showAddSalaryForm()">Add Salary</button>
+                    <button class="btn btn-success" onclick="schoolSystem.showPaySalaryForm()">Pay Salary</button>
+                    <button class="btn btn-secondary" onclick="schoolSystem.showSalarySheetForm()">Add Salary Sheet</button>
+                    <button class="btn btn-info" onclick="schoolSystem.showSalaryReport()">Add Salary Report</button>
                     <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
-                    <button class="btn btn-primary" onclick="document.getElementById('excelUpload').click()">Upload Excel</button>
+                    <button class="btn btn-warning" onclick="document.getElementById('excelUpload').click()">Upload Excel</button>
                 </div>
-                <div id="salaryList">
-                    <p>Loading salaries...</p>
-                </div>
-                <div id="salaryFormContainer">
-                    <form id="salaryForm">
-                        <!-- Salary form fields -->
+
+                <!-- Add Salary Form -->
+                <div class="form-container" id="addSalaryFormContainer" style="display: none;">
+                    <form id="addSalaryForm">
+                        <h3>Add New Salary Record</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="salaryEmployee">Employee</label>
+                                <select id="salaryEmployee" name="salary_employee" required onchange="schoolSystem.loadEmployeeSalaryInfo()">
+                                    <option value="">Select Employee</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="salaryMonth">Month</label>
+                                <select id="salaryMonth" name="salary_month" required>
+                                    <option value="">Select Month</option>
+                                    <option value="January">January</option>
+                                    <option value="February">February</option>
+                                    <option value="March">March</option>
+                                    <option value="April">April</option>
+                                    <option value="May">May</option>
+                                    <option value="June">June</option>
+                                    <option value="July">July</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="salaryYear">Year</label>
+                                <select id="salaryYear" name="salary_year" required>
+                                    <option value="">Select Year</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026">2026</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="baseSalary">Base Salary</label>
+                                <input type="number" id="baseSalary" name="base_salary" min="0" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="allowance">Allowance</label>
+                                <input type="number" id="allowance" name="allowance" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="deductions">Deductions</label>
+                                <input type="number" id="deductions" name="deductions" min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="overtime">Overtime Pay</label>
+                                <input type="number" id="overtime" name="overtime" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="bonus">Bonus</label>
+                                <input type="number" id="bonus" name="bonus" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="taxDeduction">Tax Deduction</label>
+                                <input type="number" id="taxDeduction" name="tax_deduction" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentDate">Payment Date</label>
+                                <input type="date" id="paymentDate" name="payment_date" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="salaryNotes">Notes/Remarks</label>
+                                <textarea id="salaryNotes" name="salary_notes" rows="2" placeholder="Any additional notes about this salary..."></textarea>
+                            </div>
+                        </div>
+                        <div class="salary-calculation">
+                            <div class="calculation-row">
+                                <strong>Total Salary: ₹<span id="totalSalary">0.00</span></strong>
+                            </div>
+                        </div>
                         <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Save Salary</button>
+                            <button type="submit" class="btn btn-primary">Add Salary Record</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddSalaryForm()">Cancel</button>
                         </div>
                     </form>
+                </div>
+
+                <!-- Pay Salary Form -->
+                <div class="form-container" id="paySalaryFormContainer" style="display: none;">
+                    <form id="paySalaryForm">
+                        <h3>Process Salary Payment</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="payEmployee">Employee</label>
+                                <select id="payEmployee" name="pay_employee" required onchange="schoolSystem.loadPendingSalaries()">
+                                    <option value="">Select Employee</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentMethod">Payment Method</label>
+                                <select id="paymentMethod" name="payment_method" required>
+                                    <option value="">Select Method</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Cheque">Cheque</option>
+                                    <option value="UPI">UPI</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="transactionId">Transaction ID/Reference</label>
+                                <input type="text" id="transactionId" name="transaction_id" placeholder="Transaction ID or Reference Number">
+                            </div>
+                        </div>
+                        <div class="pending-salaries" id="pendingSalariesList">
+                            <h4>Pending Salaries</h4>
+                            <p>Select an employee to view pending salaries</p>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">Process Payment</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hidePaySalaryForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Salary Sheet Form -->
+                <div class="form-container" id="salarySheetFormContainer" style="display: none;">
+                    <form id="salarySheetForm">
+                        <h3>Create Salary Sheet</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="sheetMonth">Month</label>
+                                <select id="sheetMonth" name="sheet_month" required>
+                                    <option value="">Select Month</option>
+                                    <option value="January">January</option>
+                                    <option value="February">February</option>
+                                    <option value="March">March</option>
+                                    <option value="April">April</option>
+                                    <option value="May">May</option>
+                                    <option value="June">June</option>
+                                    <option value="July">July</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="sheetYear">Year</label>
+                                <select id="sheetYear" name="sheet_year" required>
+                                    <option value="">Select Year</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026">2026</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="sheetDepartment">Department (Optional)</label>
+                                <select id="sheetDepartment" name="sheet_department">
+                                    <option value="">All Departments</option>
+                                    <option value="Teaching">Teaching</option>
+                                    <option value="Administration">Administration</option>
+                                    <option value="Support">Support</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="includeProcessed" name="include_processed"> Include Already Processed
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="includePending" name="include_pending" checked> Include Pending
+                                </label>
+                            </div>
+                        </div>
+                        <div class="salary-sheet-preview" id="salarySheetPreview">
+                            <h4>Salary Sheet Preview</h4>
+                            <p>Select criteria to generate salary sheet preview</p>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary" onclick="schoolSystem.generateSalarySheet()">Generate Sheet</button>
+                            <button type="button" class="btn btn-success" onclick="schoolSystem.downloadSalarySheet()">Download PDF</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideSalarySheetForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Salary Report Form -->
+                <div class="form-container" id="salaryReportFormContainer" style="display: none;">
+                    <form id="salaryReportForm">
+                        <h3>Generate Salary Report</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reportType">Report Type</label>
+                                <select id="reportType" name="report_type" required>
+                                    <option value="">Select Report Type</option>
+                                    <option value="monthly">Monthly Report</option>
+                                    <option value="yearly">Yearly Report</option>
+                                    <option value="employee">Employee-wise Report</option>
+                                    <option value="department">Department-wise Report</option>
+                                    <option value="summary">Summary Report</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="reportMonth">Month (For Monthly Reports)</label>
+                                <select id="reportMonth" name="report_month">
+                                    <option value="">Select Month</option>
+                                    <option value="January">January</option>
+                                    <option value="February">February</option>
+                                    <option value="March">March</option>
+                                    <option value="April">April</option>
+                                    <option value="May">May</option>
+                                    <option value="June">June</option>
+                                    <option value="July">July</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="reportYear">Year</label>
+                                <select id="reportYear" name="report_year" required>
+                                    <option value="">Select Year</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026">2026</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reportEmployee">Employee (For Employee Reports)</label>
+                                <select id="reportEmployee" name="report_employee">
+                                    <option value="">All Employees</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="reportDepartment">Department (For Department Reports)</label>
+                                <select id="reportDepartment" name="report_department">
+                                    <option value="">All Departments</option>
+                                    <option value="Teaching">Teaching</option>
+                                    <option value="Administration">Administration</option>
+                                    <option value="Support">Support</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="report-options">
+                            <h4>Report Options</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="includeGraphs" name="include_graphs"> Include Charts/Graphs
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="includeSummary" name="include_summary" checked> Include Summary
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="includeDetails" name="include_details" checked> Include Detailed Breakdown
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary" onclick="schoolSystem.generateSalaryReport()">Generate Report</button>
+                            <button type="button" class="btn btn-success" onclick="schoolSystem.downloadSalaryReport()">Download PDF</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideSalaryReportForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Main Salary List -->
+                <div id="salaryList">
+                    <div class="salary-summary-cards">
+                        <div class="summary-card">
+                            <h4>Total Employees</h4>
+                            <p id="totalEmployeesCount">0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Pending Salaries</h4>
+                            <p id="pendingSalariesCount">0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h4>This Month's Payroll</h4>
+                            <p id="monthlyPayroll">₹0.00</p>
+                        </div>
+                    </div>
+                    <div class="recent-salaries">
+                        <h3>Recent Salary Records</h3>
+                        <div id="recentSalariesTable">
+                            <p>No salary records found. Add your first salary record!</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

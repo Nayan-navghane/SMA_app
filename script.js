@@ -33,6 +33,8 @@ class SchoolManagementSystem {
         this.activities = JSON.parse(localStorage.getItem('activities')) || [];
         this.questions = [];
         this.currentEditingStudent = null;
+        this.salaries = JSON.parse(localStorage.getItem('salaries')) || [];
+        this.employees = JSON.parse(localStorage.getItem('employees')) || [];
 
         this.init();
     }
@@ -150,6 +152,27 @@ class SchoolManagementSystem {
         const resultForm = document.getElementById('resultForm');
         if (resultForm) {
             resultForm.addEventListener('submit', (e) => this.handleResultForm(e));
+        }
+
+        // Salary form event listeners
+        const addSalaryForm = document.getElementById('addSalaryForm');
+        if (addSalaryForm) {
+            addSalaryForm.addEventListener('submit', (e) => this.handleAddSalaryForm(e));
+        }
+
+        const paySalaryForm = document.getElementById('paySalaryForm');
+        if (paySalaryForm) {
+            paySalaryForm.addEventListener('submit', (e) => this.handlePaySalaryForm(e));
+        }
+
+        const salarySheetForm = document.getElementById('salarySheetForm');
+        if (salarySheetForm) {
+            salarySheetForm.addEventListener('submit', (e) => this.handleSalarySheetForm(e));
+        }
+
+        const salaryReportForm = document.getElementById('salaryReportForm');
+        if (salaryReportForm) {
+            salaryReportForm.addEventListener('submit', (e) => this.handleSalaryReportForm(e));
         }
 
         // Schedule form dropdown listeners
@@ -11368,6 +11391,792 @@ End of Paper
 
     applyTheme(theme) {
         document.body.classList = theme;
+    }
+
+    // Salary Management Methods
+    showAddSalaryForm() {
+        document.getElementById('addSalaryFormContainer').style.display = 'block';
+        this.loadEmployeesForSalary();
+        this.setDefaultSalaryDates();
+    }
+
+    hideAddSalaryForm() {
+        document.getElementById('addSalaryFormContainer').style.display = 'none';
+    }
+
+    showPaySalaryForm() {
+        document.getElementById('paySalaryFormContainer').style.display = 'block';
+        this.loadEmployeesForPayment();
+    }
+
+    hidePaySalaryForm() {
+        document.getElementById('paySalaryFormContainer').style.display = 'none';
+    }
+
+    showSalarySheetForm() {
+        document.getElementById('salarySheetFormContainer').style.display = 'block';
+        this.setDefaultSalarySheetDates();
+    }
+
+    hideSalarySheetForm() {
+        document.getElementById('salarySheetFormContainer').style.display = 'none';
+    }
+
+    showSalaryReportForm() {
+        document.getElementById('salaryReportFormContainer').style.display = 'block';
+        this.loadEmployeesForReport();
+        this.setDefaultReportDates();
+    }
+
+    hideSalaryReportForm() {
+        document.getElementById('salaryReportFormContainer').style.display = 'none';
+    }
+
+    loadEmployeesForSalary() {
+        const employeeSelect = document.getElementById('salaryEmployee');
+        if (!employeeSelect) return;
+
+        // Clear existing options except the first one
+        while (employeeSelect.children.length > 1) {
+            employeeSelect.removeChild(employeeSelect.lastChild);
+        }
+
+        // Add all employees (teachers and staff) to the dropdown
+        [...this.teachers, ...this.staff].forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = `${employee.name} (${employee.department || employee.subject || 'Employee'})`;
+            employeeSelect.appendChild(option);
+        });
+    }
+
+    loadEmployeesForPayment() {
+        const employeeSelect = document.getElementById('payEmployee');
+        if (!employeeSelect) return;
+
+        // Clear existing options except the first one
+        while (employeeSelect.children.length > 1) {
+            employeeSelect.removeChild(employeeSelect.lastChild);
+        }
+
+        // Add all employees (teachers and staff) to the dropdown
+        [...this.teachers, ...this.staff].forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = `${employee.name} (${employee.department || employee.subject || 'Employee'})`;
+            employeeSelect.appendChild(option);
+        });
+    }
+
+    loadEmployeesForReport() {
+        const employeeSelect = document.getElementById('reportEmployee');
+        if (!employeeSelect) return;
+
+        // Clear existing options except the first one
+        while (employeeSelect.children.length > 1) {
+            employeeSelect.removeChild(employeeSelect.lastChild);
+        }
+
+        // Add all employees (teachers and staff) to the dropdown
+        [...this.teachers, ...this.staff].forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = `${employee.name} (${employee.department || employee.subject || 'Employee'})`;
+            employeeSelect.appendChild(option);
+        });
+    }
+
+    loadEmployeeSalaryInfo() {
+        const employeeId = document.getElementById('salaryEmployee').value;
+        if (!employeeId) return;
+
+        const employee = [...this.teachers, ...this.staff].find(emp => emp.id == employeeId);
+        if (!employee) return;
+
+        // Auto-fill base salary if available
+        const baseSalaryInput = document.getElementById('baseSalary');
+        if (baseSalaryInput && employee.salary) {
+            baseSalaryInput.value = employee.salary;
+            this.calculateTotalSalary();
+        }
+    }
+
+    loadPendingSalaries() {
+        const employeeId = document.getElementById('payEmployee').value;
+        if (!employeeId) {
+            document.getElementById('pendingSalariesList').innerHTML = '<p>Select an employee to view pending salaries</p>';
+            return;
+        }
+
+        const employee = [...this.teachers, ...this.staff].find(emp => emp.id == employeeId);
+        if (!employee) return;
+
+        // Get pending salaries for this employee
+        const pendingSalaries = this.salaries.filter(salary =>
+            salary.employee_id == employeeId &&
+            salary.status !== 'paid'
+        );
+
+        if (pendingSalaries.length === 0) {
+            document.getElementById('pendingSalariesList').innerHTML = '<p>No pending salaries for this employee</p>';
+        } else {
+            let html = '<h4>Pending Salaries</h4>';
+            html += '<div class="pending-salaries-grid">';
+
+            pendingSalaries.forEach(salary => {
+                html += `
+                    <div class="salary-item">
+                        <div class="salary-info">
+                            <strong>${salary.month} ${salary.year}</strong><br>
+                            Base: ₹${salary.base_salary}<br>
+                            Allowance: ₹${salary.allowance || 0}<br>
+                            Deductions: ₹${salary.deductions || 0}<br>
+                            <strong>Total: ₹${salary.total_salary}</strong>
+                        </div>
+                        <div class="salary-actions">
+                            <label>
+                                <input type="checkbox" name="pending_salary_${salary.id}" value="${salary.id}">
+                                Pay Now
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            document.getElementById('pendingSalariesList').innerHTML = html;
+        }
+    }
+
+    setDefaultSalaryDates() {
+        const today = new Date();
+        const salaryMonthSelect = document.getElementById('salaryMonth');
+        const salaryYearSelect = document.getElementById('salaryYear');
+        const paymentDateInput = document.getElementById('paymentDate');
+
+        if (salaryMonthSelect) {
+            salaryMonthSelect.value = today.toLocaleDateString('en-US', { month: 'long' });
+        }
+        if (salaryYearSelect) {
+            salaryYearSelect.value = today.getFullYear().toString();
+        }
+        if (paymentDateInput) {
+            paymentDateInput.valueAsDate = today;
+        }
+    }
+
+    setDefaultSalarySheetDates() {
+        const today = new Date();
+        const sheetMonthSelect = document.getElementById('sheetMonth');
+        const sheetYearSelect = document.getElementById('sheetYear');
+
+        if (sheetMonthSelect) {
+            sheetMonthSelect.value = today.toLocaleDateString('en-US', { month: 'long' });
+        }
+        if (sheetYearSelect) {
+            sheetYearSelect.value = today.getFullYear().toString();
+        }
+    }
+
+    setDefaultReportDates() {
+        const today = new Date();
+        const reportMonthSelect = document.getElementById('reportMonth');
+        const reportYearSelect = document.getElementById('reportYear');
+
+        if (reportMonthSelect) {
+            reportMonthSelect.value = today.toLocaleDateString('en-US', { month: 'long' });
+        }
+        if (reportYearSelect) {
+            reportYearSelect.value = today.getFullYear().toString();
+        }
+    }
+
+    calculateTotalSalary() {
+        const baseSalary = parseFloat(document.getElementById('baseSalary').value) || 0;
+        const allowance = parseFloat(document.getElementById('allowance').value) || 0;
+        const deductions = parseFloat(document.getElementById('deductions').value) || 0;
+        const overtime = parseFloat(document.getElementById('overtime').value) || 0;
+        const bonus = parseFloat(document.getElementById('bonus').value) || 0;
+        const taxDeduction = parseFloat(document.getElementById('taxDeduction').value) || 0;
+
+        const totalSalary = baseSalary + allowance + overtime + bonus - deductions - taxDeduction;
+
+        document.getElementById('totalSalary').textContent = totalSalary.toFixed(2);
+    }
+
+    handleAddSalaryForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const employeeId = formData.get('salary_employee');
+        const employee = [...this.teachers, ...this.staff].find(emp => emp.id == employeeId);
+
+        if (!employee) {
+            alert('Please select a valid employee');
+            return;
+        }
+
+        const baseSalary = parseFloat(formData.get('base_salary')) || 0;
+        const allowance = parseFloat(formData.get('allowance')) || 0;
+        const deductions = parseFloat(formData.get('deductions')) || 0;
+        const overtime = parseFloat(formData.get('overtime')) || 0;
+        const bonus = parseFloat(formData.get('bonus')) || 0;
+        const taxDeduction = parseFloat(formData.get('tax_deduction')) || 0;
+
+        const totalSalary = baseSalary + allowance + overtime + bonus - deductions - taxDeduction;
+
+        const salaryRecord = {
+            id: Date.now(),
+            employee_id: employeeId,
+            employee_name: employee.name,
+            employee_department: employee.department || employee.subject || 'General',
+            month: formData.get('salary_month'),
+            year: formData.get('salary_year'),
+            base_salary: baseSalary,
+            allowance: allowance,
+            deductions: deductions,
+            overtime: overtime,
+            bonus: bonus,
+            tax_deduction: taxDeduction,
+            total_salary: totalSalary,
+            payment_date: formData.get('payment_date'),
+            notes: formData.get('salary_notes'),
+            status: 'pending',
+            created_date: new Date().toISOString()
+        };
+
+        this.salaries.push(salaryRecord);
+        localStorage.setItem('salaries', JSON.stringify(this.salaries));
+        e.target.reset();
+        this.loadSalaries();
+        alert('Salary record added successfully!');
+    }
+
+    handlePaySalaryForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const employeeId = formData.get('pay_employee');
+        const paymentMethod = formData.get('payment_method');
+        const transactionId = formData.get('transaction_id');
+
+        if (!employeeId || !paymentMethod) {
+            alert('Please select employee and payment method');
+            return;
+        }
+
+        // Get selected pending salaries
+        const selectedSalaries = [];
+        const checkboxes = document.querySelectorAll('input[name^="pending_salary_"]:checked');
+
+        checkboxes.forEach(checkbox => {
+            const salaryId = checkbox.value;
+            const salary = this.salaries.find(s => s.id == salaryId);
+            if (salary) {
+                selectedSalaries.push(salary);
+            }
+        });
+
+        if (selectedSalaries.length === 0) {
+            alert('Please select at least one salary to pay');
+            return;
+        }
+
+        // Update salary status to paid
+        selectedSalaries.forEach(salary => {
+            salary.status = 'paid';
+            salary.payment_method = paymentMethod;
+            salary.transaction_id = transactionId;
+            salary.paid_date = new Date().toISOString();
+        });
+
+        localStorage.setItem('salaries', JSON.stringify(this.salaries));
+        e.target.reset();
+        this.loadSalaries();
+        alert(`Successfully processed payment for ${selectedSalaries.length} salary record(s)!`);
+    }
+
+    handleSalarySheetForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const month = formData.get('sheet_month');
+        const year = formData.get('sheet_year');
+        const department = formData.get('sheet_department');
+        const includeProcessed = formData.get('include_processed') === 'on';
+        const includePending = formData.get('include_pending') === 'on';
+
+        if (!month || !year) {
+            alert('Please select month and year');
+            return;
+        }
+
+        // Filter salaries based on criteria
+        let filteredSalaries = this.salaries.filter(salary =>
+            salary.month === month && salary.year === year
+        );
+
+        if (department) {
+            filteredSalaries = filteredSalaries.filter(salary =>
+                salary.employee_department === department
+            );
+        }
+
+        if (!includeProcessed) {
+            filteredSalaries = filteredSalaries.filter(salary => salary.status !== 'paid');
+        }
+
+        if (!includePending) {
+            filteredSalaries = filteredSalaries.filter(salary => salary.status !== 'pending');
+        }
+
+        if (filteredSalaries.length === 0) {
+            alert('No salary records found for selected criteria');
+            return;
+        }
+
+        this.displaySalarySheet(filteredSalaries, month, year);
+    }
+
+    handleSalaryReportForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const reportType = formData.get('report_type');
+        const month = formData.get('report_month');
+        const year = formData.get('report_year');
+        const employeeId = formData.get('report_employee');
+        const department = formData.get('report_department');
+
+        if (!reportType || !year) {
+            alert('Please select report type and year');
+            return;
+        }
+
+        let filteredSalaries = this.salaries;
+
+        if (month) {
+            filteredSalaries = filteredSalaries.filter(salary => salary.month === month);
+        }
+
+        filteredSalaries = filteredSalaries.filter(salary => salary.year === year);
+
+        if (employeeId) {
+            filteredSalaries = filteredSalaries.filter(salary => salary.employee_id == employeeId);
+        }
+
+        if (department) {
+            filteredSalaries = filteredSalaries.filter(salary => salary.employee_department === department);
+        }
+
+        if (filteredSalaries.length === 0) {
+            alert('No salary records found for selected criteria');
+            return;
+        }
+
+        this.generateSalaryReport(filteredSalaries, reportType, month, year);
+    }
+
+    displaySalarySheet(salaries, month, year) {
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+
+        let html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Salary Sheet - ${month} ${year}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                    .school-logo { max-height: 80px; margin-bottom: 10px; }
+                    .salary-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                    .salary-table th, .salary-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+                    .salary-table th { background: #f8f9fa; font-weight: bold; }
+                    .employee-name { text-align: left; font-weight: bold; }
+                    .total-row { background: #e9ecef; font-weight: bold; }
+                    .summary { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+                    @media print { body { margin: 0; } .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <h1>${schoolInfo.name || 'School Management System'}</h1>
+                    <h2>Salary Sheet - ${month} ${year}</h2>
+                    <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div class="summary">
+                    <strong>Summary:</strong> Total Employees: ${salaries.length} |
+                    Total Amount: ₹${salaries.reduce((sum, s) => sum + s.total_salary, 0).toFixed(2)} |
+                    Pending: ${salaries.filter(s => s.status !== 'paid').length} |
+                    Paid: ${salaries.filter(s => s.status === 'paid').length}
+                </div>
+
+                <table class="salary-table">
+                    <thead>
+                        <tr>
+                            <th>Employee Name</th>
+                            <th>Department</th>
+                            <th>Base Salary</th>
+                            <th>Allowance</th>
+                            <th>Overtime</th>
+                            <th>Bonus</th>
+                            <th>Deductions</th>
+                            <th>Tax</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        salaries.forEach(salary => {
+            html += `
+                <tr>
+                    <td class="employee-name">${salary.employee_name}</td>
+                    <td>${salary.employee_department}</td>
+                    <td>₹${salary.base_salary.toFixed(2)}</td>
+                    <td>₹${(salary.allowance || 0).toFixed(2)}</td>
+                    <td>₹${(salary.overtime || 0).toFixed(2)}</td>
+                    <td>₹${(salary.bonus || 0).toFixed(2)}</td>
+                    <td>₹${(salary.deductions || 0).toFixed(2)}</td>
+                    <td>₹${(salary.tax_deduction || 0).toFixed(2)}</td>
+                    <td>₹${salary.total_salary.toFixed(2)}</td>
+                    <td>${salary.status}</td>
+                </tr>
+            `;
+        });
+
+        const totalAmount = salaries.reduce((sum, s) => sum + s.total_salary, 0);
+        html += `
+                        <tr class="total-row">
+                            <td colspan="8">TOTAL AMOUNT</td>
+                            <td>₹${totalAmount.toFixed(2)}</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()">Print Salary Sheet</button>
+                    <button onclick="window.close()">Close Preview</button>
+                </div>
+            </body>
+            </html>
+        `;
+
+        previewWindow.document.write(html);
+    }
+
+    generateSalaryReport(salaries, reportType, month, year) {
+        const previewWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+
+        let html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Salary Report - ${reportType} ${month ? month + ' ' : ''}${year}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                    .school-logo { max-height: 80px; margin-bottom: 10px; }
+                    .report-info { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+                    .salary-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                    .salary-table th, .salary-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+                    .salary-table th { background: #f8f9fa; font-weight: bold; }
+                    .employee-name { text-align: left; font-weight: bold; }
+                    .summary { margin: 20px 0; padding: 15px; background: #e9ecef; border-radius: 5px; }
+                    @media print { body { margin: 0; } .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <h1>${schoolInfo.name || 'School Management System'}</h1>
+                    <h2>Salary Report - ${reportType}</h2>
+                    <p>Period: ${month ? month + ' ' : ''}${year}</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div class="report-info">
+                    <strong>Report Details:</strong> Total Records: ${salaries.length} |
+                    Total Amount: ₹${salaries.reduce((sum, s) => sum + s.total_salary, 0).toFixed(2)}
+                </div>
+        `;
+
+        if (reportType === 'monthly' || reportType === 'yearly') {
+            // Group by employee
+            const employeeGroups = {};
+            salaries.forEach(salary => {
+                if (!employeeGroups[salary.employee_id]) {
+                    employeeGroups[salary.employee_id] = {
+                        employee: salary,
+                        salaries: []
+                    };
+                }
+                employeeGroups[salary.employee_id].salaries.push(salary);
+            });
+
+            html += '<table class="salary-table"><thead><tr><th>Employee</th><th>Department</th><th>Months</th><th>Total Amount</th></tr></thead><tbody>';
+
+            Object.values(employeeGroups).forEach(group => {
+                const totalAmount = group.salaries.reduce((sum, s) => sum + s.total_salary, 0);
+                const months = group.salaries.map(s => s.month).join(', ');
+                html += `
+                    <tr>
+                        <td class="employee-name">${group.employee.employee_name}</td>
+                        <td>${group.employee.employee_department}</td>
+                        <td>${months}</td>
+                        <td>₹${totalAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+        } else if (reportType === 'employee') {
+            const employee = salaries[0];
+            html += `
+                <div class="summary">
+                    <h3>Employee Details</h3>
+                    <p><strong>Name:</strong> ${employee.employee_name}</p>
+                    <p><strong>Department:</strong> ${employee.employee_department}</p>
+                    <p><strong>Period:</strong> ${month ? month + ' ' : ''}${year}</p>
+                </div>
+
+                <table class="salary-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Base Salary</th>
+                            <th>Allowance</th>
+                            <th>Overtime</th>
+                            <th>Bonus</th>
+                            <th>Deductions</th>
+                            <th>Tax</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            salaries.forEach(salary => {
+                html += `
+                    <tr>
+                        <td>${salary.month}</td>
+                        <td>₹${salary.base_salary.toFixed(2)}</td>
+                        <td>₹${(salary.allowance || 0).toFixed(2)}</td>
+                        <td>₹${(salary.overtime || 0).toFixed(2)}</td>
+                        <td>₹${(salary.bonus || 0).toFixed(2)}</td>
+                        <td>₹${(salary.deductions || 0).toFixed(2)}</td>
+                        <td>₹${(salary.tax_deduction || 0).toFixed(2)}</td>
+                        <td>₹${salary.total_salary.toFixed(2)}</td>
+                        <td>${salary.status}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+        }
+
+        html += `
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()">Print Report</button>
+                    <button onclick="window.close()">Close Preview</button>
+                </div>
+            </body>
+            </html>
+        `;
+
+        previewWindow.document.write(html);
+    }
+
+    generateSalarySheet() {
+        const month = document.getElementById('sheetMonth').value;
+        const year = document.getElementById('sheetYear').value;
+        const department = document.getElementById('sheetDepartment').value;
+
+        if (!month || !year) {
+            alert('Please select month and year');
+            return;
+        }
+
+        // Filter salaries
+        let salaries = this.salaries.filter(salary =>
+            salary.month === month && salary.year === year
+        );
+
+        if (department) {
+            salaries = salaries.filter(salary => salary.employee_department === department);
+        }
+
+        if (salaries.length === 0) {
+            alert('No salary records found for selected criteria');
+            return;
+        }
+
+        this.displaySalarySheet(salaries, month, year);
+    }
+
+    downloadSalarySheet() {
+        this.generateSalarySheet();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    generateSalaryReport() {
+        const reportType = document.getElementById('reportType').value;
+        const month = document.getElementById('reportMonth').value;
+        const year = document.getElementById('reportYear').value;
+        const employeeId = document.getElementById('reportEmployee').value;
+        const department = document.getElementById('reportDepartment').value;
+
+        if (!reportType || !year) {
+            alert('Please select report type and year');
+            return;
+        }
+
+        let salaries = this.salaries;
+
+        if (month) {
+            salaries = salaries.filter(salary => salary.month === month);
+        }
+
+        salaries = salaries.filter(salary => salary.year === year);
+
+        if (employeeId) {
+            salaries = salaries.filter(salary => salary.employee_id == employeeId);
+        }
+
+        if (department) {
+            salaries = salaries.filter(salary => salary.employee_department === department);
+        }
+
+        if (salaries.length === 0) {
+            alert('No salary records found for selected criteria');
+            return;
+        }
+
+        this.generateSalaryReport(salaries, reportType, month, year);
+    }
+
+    downloadSalaryReport() {
+        this.generateSalaryReport();
+        setTimeout(() => {
+            window.print();
+        }, 1000);
+    }
+
+    loadSalaries() {
+        const salaryList = document.getElementById('salaryList');
+        if (!salaryList) return;
+
+        // Update summary cards
+        const totalEmployees = new Set([...this.teachers, ...this.staff].map(emp => emp.id)).size;
+        const pendingSalaries = this.salaries.filter(s => s.status !== 'paid').length;
+        const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long' });
+        const currentYear = new Date().getFullYear().toString();
+        const monthlyPayroll = this.salaries
+            .filter(s => s.month === currentMonth && s.year === currentYear)
+            .reduce((sum, s) => sum + s.total_salary, 0);
+
+        document.getElementById('totalEmployeesCount').textContent = totalEmployees;
+        document.getElementById('pendingSalariesCount').textContent = pendingSalaries;
+        document.getElementById('monthlyPayroll').textContent = '₹' + monthlyPayroll.toFixed(2);
+
+        // Update recent salaries table
+        const recentSalaries = this.salaries.slice(-10).reverse(); // Last 10 records
+
+        if (recentSalaries.length === 0) {
+            salaryList.innerHTML = `
+                <div class="salary-summary-cards">
+                    <div class="summary-card">
+                        <h4>Total Employees</h4>
+                        <p id="totalEmployeesCount">${totalEmployees}</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Pending Salaries</h4>
+                        <p id="pendingSalariesCount">${pendingSalaries}</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>This Month's Payroll</h4>
+                        <p id="monthlyPayroll">₹${monthlyPayroll.toFixed(2)}</p>
+                    </div>
+                </div>
+                <div class="recent-salaries">
+                    <h3>Recent Salary Records</h3>
+                    <div id="recentSalariesTable">
+                        <p>No salary records found. Add your first salary record!</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            salaryList.innerHTML = `
+                <div class="salary-summary-cards">
+                    <div class="summary-card">
+                        <h4>Total Employees</h4>
+                        <p id="totalEmployeesCount">${totalEmployees}</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Pending Salaries</h4>
+                        <p id="pendingSalariesCount">${pendingSalaries}</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>This Month's Payroll</h4>
+                        <p id="monthlyPayroll">₹${monthlyPayroll.toFixed(2)}</p>
+                    </div>
+                </div>
+                <div class="recent-salaries">
+                    <h3>Recent Salary Records</h3>
+                    <div id="recentSalariesTable">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Department</th>
+                                    <th>Month/Year</th>
+                                    <th>Total Salary</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${recentSalaries.map(salary => `
+                                    <tr>
+                                        <td>${salary.employee_name}</td>
+                                        <td>${salary.employee_department}</td>
+                                        <td>${salary.month} ${salary.year}</td>
+                                        <td>₹${salary.total_salary.toFixed(2)}</td>
+                                        <td>
+                                            <span class="status-badge status-${salary.status}">${salary.status}</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" onclick="schoolSystem.editSalary('${salary.id}')">Edit</button>
+                                            <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteSalary('${salary.id}')">Delete</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    editSalary(id) {
+        // Implement edit logic
+        alert('Edit salary record ' + id);
+    }
+
+    deleteSalary(id) {
+        this.salaries = this.salaries.filter(s => s.id !== id);
+        localStorage.setItem('salaries', JSON.stringify(this.salaries));
+        this.loadSalaries();
     }
 }
 
