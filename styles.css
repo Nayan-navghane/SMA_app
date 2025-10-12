@@ -506,6 +506,144 @@ body {
     gap: 12px;
 }
 
+/* Added Salary Management Buttons */
+.salary-management-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.salary-btn-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.salary-btn-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s ease;
+}
+
+.salary-btn-container:hover::before {
+    left: 100%;
+}
+
+.salary-btn-container:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: #0d6efd;
+}
+
+.salary-btn-container .salary-btn {
+    width: 100%;
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.salary-btn-container .salary-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.salary-btn-container .salary-btn:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+.salary-btn-container .salary-btn i {
+    font-size: 1.5rem;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.salary-btn-container .salary-btn span {
+    vertical-align: middle;
+}
+
+.salary-btn-container p {
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
+    font-weight: 400;
+}
+
+/* Enhanced button colors for salary management */
+.salary-btn-container:nth-child(1) .salary-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    color: white;
+}
+
+.salary-btn-container:nth-child(1) .salary-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.salary-btn-container:nth-child(2) .salary-btn {
+    background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+    border: none;
+    color: white;
+}
+
+.salary-btn-container:nth-child(2) .salary-btn:hover {
+    background: linear-gradient(135deg, #0aa2c0, #087990);
+    box-shadow: 0 6px 20px rgba(13, 202, 240, 0.4);
+}
+
+.salary-btn-container:nth-child(3) .salary-btn {
+    background: linear-gradient(135deg, #0d6efd, #0056b3);
+    border: none;
+    color: white;
+}
+
+.salary-btn-container:nth-child(3) .salary-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+}
+
+.salary-btn-container:nth-child(4) .salary-btn {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    border: none;
+    color: white;
+}
+
+.salary-btn-container:nth-child(4) .salary-btn:hover {
+    background: linear-gradient(135deg, #495057, #343a40);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+}
+
 #salaryFormContainer {
     display: none;
 }
@@ -1463,6 +1601,33 @@ body {
     .salary-actions .btn {
         width: 100%;
         margin-bottom: 8px;
+    }
+
+    /* Salary Management Buttons Mobile Styles */
+    .salary-management-buttons {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .salary-btn-container {
+        padding: 16px;
+    }
+
+    .salary-btn-container .salary-btn {
+        padding: 14px 16px;
+        font-size: 1rem;
+    }
+
+    .salary-btn-container .salary-btn i {
+        font-size: 1.25rem;
+        margin-right: 6px;
+    }
+
+    .salary-btn-container p {
+        font-size: 0.8rem;
+        line-height: 1.4;
     }
 
     .form-container {

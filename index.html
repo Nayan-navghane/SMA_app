@@ -1640,11 +1640,45 @@
             <!-- Salary Section -->
             <div id="salary" class="section">
                 <h2>Salary Management</h2>
-                <div class="salary-actions">
+
+                <!-- Added Salary Management Buttons -->
+                <div class="salary-management-buttons">
+                    <div class="salary-btn-container">
+                        <button class="btn btn-success salary-btn" onclick="schoolSystem.showPaySalaryForm()">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>💰 Pay Salary</span>
+                        </button>
+                        <p>Allows you to select an employee and view their pending salaries, then mark them as paid</p>
+                    </div>
+
+                    <div class="salary-btn-container">
+                        <button class="btn btn-info salary-btn" onclick="schoolSystem.showSalarySlipForm()">
+                            <i class="fas fa-receipt"></i>
+                            <span>🧾 Salary Paid Slip</span>
+                        </button>
+                        <p>Generate individual salary slips for paid salaries with detailed breakdowns</p>
+                    </div>
+
+                    <div class="salary-btn-container">
+                        <button class="btn btn-primary salary-btn" onclick="schoolSystem.showSalarySheetForm()">
+                            <i class="fas fa-list-alt"></i>
+                            <span>📋 Salary Sheet</span>
+                        </button>
+                        <p>Display a comprehensive salary sheet with all records and totals</p>
+                    </div>
+
+                    <div class="salary-btn-container">
+                        <button class="btn btn-secondary salary-btn" onclick="schoolSystem.showSalaryReport()">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>📊 Salary Report</span>
+                        </button>
+                        <p>Enhanced the existing report functionality</p>
+                    </div>
+                </div>
+
+                <!-- Existing Salary Actions -->
+                <div class="salary-actions" style="margin-top: 20px;">
                     <button class="btn btn-primary" onclick="schoolSystem.showAddSalaryForm()">Add Salary</button>
-                    <button class="btn btn-success" onclick="schoolSystem.showPaySalaryForm()">Pay Salary</button>
-                    <button class="btn btn-secondary" onclick="schoolSystem.showSalarySheetForm()">Add Salary Sheet</button>
-                    <button class="btn btn-info" onclick="schoolSystem.showSalaryReport()">Add Salary Report</button>
                     <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
                     <button class="btn btn-warning" onclick="document.getElementById('excelUpload').click()">Upload Excel</button>
                 </div>
