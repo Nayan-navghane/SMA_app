@@ -1964,6 +1964,36 @@
                     </form>
                 </div>
 
+                <!-- Salary Slip Form -->
+                <div class="form-container" id="salarySlipFormContainer" style="display: none;">
+                    <form id="salarySlipForm">
+                        <h3>Generate Salary Slip</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="slipEmployee">Employee</label>
+                                <select id="slipEmployee" name="slip_employee" required onchange="schoolSystem.loadPaidSalaries()">
+                                    <option value="">Select Employee</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="slipRecord">Salary Record</label>
+                                <select id="slipRecord" name="slip_record" required>
+                                    <option value="">Select Paid Salary Record</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="salary-slip-preview" id="salarySlipPreview">
+                            <h4>Salary Slip Preview</h4>
+                            <p>Select an employee and salary record to generate slip preview</p>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary" onclick="schoolSystem.generateSalarySlip()">Generate Slip</button>
+                            <button type="button" class="btn btn-success" onclick="schoolSystem.printSalarySlip()">Print Slip</button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideSalarySlipForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
                 <!-- Main Salary List -->
                 <div id="salaryList">
                     <div class="salary-summary-cards">

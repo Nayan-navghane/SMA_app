@@ -12600,6 +12600,285 @@ End of Paper
 
         return isFormValid;
     }
+
+    // Salary Slip Management Methods
+    showSalarySlipForm() {
+        document.getElementById('salarySlipFormContainer').style.display = 'block';
+        this.loadEmployeesForSlip();
+        this.setupSlipFormValidation();
+    }
+
+    hideSalarySlipForm() {
+        document.getElementById('salarySlipFormContainer').style.display = 'none';
+        this.clearSlipFormValidation();
+    }
+
+    loadEmployeesForSlip() {
+        const employeeSelect = document.getElementById('slipEmployee');
+        if (!employeeSelect) return;
+
+        // Clear existing options except the first one
+        while (employeeSelect.children.length > 1) {
+            employeeSelect.removeChild(employeeSelect.lastChild);
+        }
+
+        // Add all employees (teachers and staff) to the dropdown
+        [...this.teachers, ...this.staff].forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = `${employee.name} (${employee.department || employee.subject || 'Employee'})`;
+            employeeSelect.appendChild(option);
+        });
+    }
+
+    loadPaidSalaries() {
+        const employeeId = document.getElementById('slipEmployee').value;
+        const recordSelect = document.getElementById('slipRecord');
+        if (!employeeId || !recordSelect) return;
+
+        // Clear existing options except the first one
+        while (recordSelect.children.length > 1) {
+            recordSelect.removeChild(recordSelect.lastChild);
+        }
+
+        // Load paid salary records for the selected employee
+        const paidRecords = this.salaries.filter(salary =>
+            salary.employee_id == employeeId && salary.status === 'paid'
+        );
+
+        if (paidRecords.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No paid salary records found';
+            recordSelect.appendChild(option);
+            return;
+        }
+
+        paidRecords.forEach(record => {
+            const option = document.createElement('option');
+            option.value = record.id;
+            const monthYear = `${record.month} ${record.year}`;
+            const amount = parseFloat(record.total_salary || 0).toFixed(2);
+            option.textContent = `${monthYear} - ₹${amount}`;
+            recordSelect.appendChild(option);
+        });
+    }
+
+    generateSalarySlip() {
+        const employeeId = document.getElementById('slipEmployee').value;
+        const recordId = document.getElementById('slipRecord').value;
+
+        if (!employeeId || !recordId) {
+            alert('Please select both employee and salary record');
+            return;
+        }
+
+        const salaryRecord = this.salaries.find(s => s.id == recordId);
+        const employee = [...this.teachers, ...this.staff].find(e => e.id == employeeId);
+
+        if (!salaryRecord || !employee) {
+            alert('Salary record or employee not found');
+            return;
+        }
+
+        const previewDiv = document.getElementById('salarySlipPreview');
+        previewDiv.innerHTML = this.createSalarySlipHTML(employee, salaryRecord);
+    }
+
+    createSalarySlipHTML(employee, salaryRecord) {
+        const schoolInfo = this.getSchoolInfo();
+        const paymentDate = new Date(salaryRecord.payment_date || salaryRecord.date).toLocaleDateString('en-IN');
+
+        return `
+            <div class="salary-slip-container">
+                <div class="slip-header">
+                    <div class="company-info">
+                        <h2>${schoolInfo.name || 'School Name'}</h2>
+                        <p>${schoolInfo.address || 'School Address'}</p>
+                        <p>Phone: ${schoolInfo.phone || ''} | Email: ${schoolInfo.email || ''}</p>
+                    </div>
+                    <div class="slip-title">
+                        <h3>SALARY SLIP</h3>
+                        <p>Month: ${salaryRecord.month} ${salaryRecord.year}</p>
+                    </div>
+                </div>
+
+                <div class="employee-info">
+                    <div class="info-row">
+                        <div class="info-item"><strong>Employee Name:</strong> ${employee.name}</div>
+                        <div class="info-item"><strong>Employee ID:</strong> ${employee.id}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-item"><strong>Department:</strong> ${employee.department || 'N/A'}</div>
+                        <div class="info-item"><strong>Designation:</strong> ${employee.subject || employee.role || 'N/A'}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-item"><strong>Payment Date:</strong> ${paymentDate}</div>
+                        <div class="info-item"><strong>Payment Method:</strong> ${salaryRecord.payment_method || 'N/A'}</div>
+                    </div>
+                </div>
+
+                <div class="salary-breakdown">
+                    <h4>Salary Breakdown</h4>
+                    <table class="slip-table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Base Salary</td>
+                                <td>${parseFloat(salaryRecord.base_salary || 0).toFixed(2)}</td>
+                            </tr>
+                            ${salaryRecord.allowance ? `<tr><td>Allowance</td><td>${parseFloat(salaryRecord.allowance).toFixed(2)}</td></tr>` : ''}
+                            ${salaryRecord.overtime ? `<tr><td>Overtime Pay</td><td>${parseFloat(salaryRecord.overtime).toFixed(2)}</td></tr>` : ''}
+                            ${salaryRecord.bonus ? `<tr><td>Bonus</td><td>${parseFloat(salaryRecord.bonus).toFixed(2)}</td></tr>` : ''}
+                            <tr class="total-row">
+                                <td><strong>Gross Salary</strong></td>
+                                <td><strong>${parseFloat(salaryRecord.gross_salary || salaryRecord.total_salary || 0).toFixed(2)}</strong></td>
+                            </tr>
+                            ${salaryRecord.deductions ? `<tr><td>Deductions</td><td>-${parseFloat(salaryRecord.deductions).toFixed(2)}</td></tr>` : ''}
+                            ${salaryRecord.tax_deduction ? `<tr><td>Tax Deduction</td><td>-${parseFloat(salaryRecord.tax_deduction).toFixed(2)}</td></tr>` : ''}
+                            <tr class="net-total-row">
+                                <td><strong>Net Salary</strong></td>
+                                <td><strong>${parseFloat(salaryRecord.total_salary || 0).toFixed(2)}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="slip-footer">
+                    <div class="signature-section">
+                        <div class="signature-box">
+                            <p>Employee Signature</p>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="signature-box">
+                            <p>Authorized Signature</p>
+                            <div class="signature-line"></div>
+                        </div>
+                    </div>
+                    <div class="slip-note">
+                        <p><em>This is a computer-generated salary slip and does not require signature.</em></p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    printSalarySlip() {
+        const previewDiv = document.getElementById('salarySlipPreview');
+        if (!previewDiv || !previewDiv.innerHTML.includes('salary-slip-container')) {
+            alert('Please generate a salary slip first');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        const schoolInfo = this.getSchoolInfo();
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Salary Slip - ${schoolInfo.name || 'School'}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .salary-slip-container { max-width: 800px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; }
+                    .slip-header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    .company-info h2 { margin: 0; color: #333; }
+                    .slip-title h3 { margin: 0; color: #666; text-align: right; }
+                    .employee-info { margin-bottom: 30px; }
+                    .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+                    .salary-breakdown h4 { margin-bottom: 15px; color: #333; }
+                    .slip-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                    .slip-table th, .slip-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    .slip-table th { background-color: #f5f5f5; font-weight: bold; }
+                    .total-row { background-color: #e8f4f8; }
+                    .net-total-row { background-color: #d4edda; font-weight: bold; }
+                    .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
+                    .signature-box { text-align: center; width: 45%; }
+                    .signature-line { border-bottom: 1px solid #000; margin-top: 40px; }
+                    .slip-note { text-align: center; margin-top: 20px; font-style: italic; color: #666; }
+                    @media print { body { margin: 0; } }
+                </style>
+            </head>
+            <body>
+                ${previewDiv.innerHTML}
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    setupSlipFormValidation() {
+        const form = document.getElementById('salarySlipForm');
+        if (!form) return;
+
+        const requiredFields = ['slipEmployee', 'slipRecord'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateSlipField(fieldId));
+                field.addEventListener('change', () => this.clearFieldError(fieldId));
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            if (!this.validateSlipForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    clearSlipFormValidation() {
+        const errorElements = document.querySelectorAll('.slip-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+    }
+
+    validateSlipField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        if (!field.value) {
+            isValid = false;
+            errorMessage = `Please select ${fieldId === 'slipEmployee' ? 'an employee' : 'a salary record'}`;
+        }
+
+        this.displayFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    validateSlipForm() {
+        const requiredFields = ['slipEmployee', 'slipRecord'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validateSlipField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
+    }
+
+    getSchoolInfo() {
+        return this.schoolInfo || {
+            name: 'School Management System',
+            address: 'School Address',
+            phone: '',
+            email: ''
+        };
+    }
 }
 
 const schoolSystem = new SchoolManagementSystem();

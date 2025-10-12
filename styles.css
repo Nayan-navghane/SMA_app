@@ -1733,8 +1733,135 @@ body {
     animation: slideIn 0.3s ease;
 }
 
-/* Print Styles */
+/* Salary Slip Styles */
+.salary-slip-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.slip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 20px;
+}
+
+.company-info h2 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 24px;
+}
+
+.company-info p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.slip-title {
+    text-align: right;
+}
+
+.slip-title h3 {
+    margin: 0;
+    color: #666;
+    font-size: 18px;
+}
+
+.employee-info {
+    margin-bottom: 30px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.info-item {
+    flex: 1;
+    padding: 5px 0;
+}
+
+.salary-breakdown h4 {
+    margin-bottom: 15px;
+    color: #333;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.slip-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+
+.slip-table th, .slip-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+.slip-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.total-row {
+    background-color: #e8f4f8;
+}
+
+.net-total-row {
+    background-color: #d4edda;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.signature-section {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 50px;
+}
+
+.signature-box {
+    text-align: center;
+    width: 45%;
+}
+
+.signature-box p {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.signature-line {
+    border-bottom: 1px solid #000;
+    margin-top: 40px;
+}
+
+.slip-note {
+    text-align: center;
+    margin-top: 20px;
+    font-style: italic;
+    color: #666;
+    font-size: 12px;
+}
+
+/* Print styles */
 @media print {
+    .salary-slip-container {
+        box-shadow: none;
+        border: none;
+        margin: 0;
+    }
+
     .sidebar,
     .action-buttons,
     .filters,
