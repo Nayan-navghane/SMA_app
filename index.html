@@ -1637,44 +1637,81 @@
                 </div>
             </div>
 
-            <!-- Salary Section -->
-            <div id="salary" class="section">
-                <h2>Salary Management</h2>
+                <!-- Salary Section -->
+                <div id="salary" class="section">
+                    <h2>Salary Management</h2>
 
-                <!-- Added Salary Management Buttons -->
-                <div class="salary-management-buttons">
-                    <div class="salary-btn-container">
-                        <button class="btn btn-success salary-btn" onclick="schoolSystem.showPaySalaryForm()">
-                            <i class="fas fa-money-bill-wave"></i>
-                            <span>💰 Pay Salary</span>
-                        </button>
-                        <p>Allows you to select an employee and view their pending salaries, then mark them as paid</p>
-                    </div>
+                    <!-- Enhanced Salary Management Interface -->
+                    <div class="salary-management-dashboard">
+                        <!-- Quick Stats Cards -->
+                        <div class="salary-stats-overview">
+                            <div class="stat-card salary-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number" id="totalEmployeesCount">0</div>
+                                    <div class="stat-label">Total Employees</div>
+                                </div>
+                            </div>
+                            <div class="stat-card salary-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number" id="pendingSalariesCount">0</div>
+                                    <div class="stat-label">Pending Salaries</div>
+                                </div>
+                            </div>
+                            <div class="stat-card salary-stat">
+                                <div class="stat-icon">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number" id="monthlyPayroll">₹0.00</div>
+                                    <div class="stat-label">This Month's Payroll</div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="salary-btn-container">
-                        <button class="btn btn-info salary-btn" onclick="schoolSystem.showSalarySlipForm()">
-                            <i class="fas fa-receipt"></i>
-                            <span>🧾 Salary Paid Slip</span>
-                        </button>
-                        <p>Generate individual salary slips for paid salaries with detailed breakdowns</p>
-                    </div>
+                        <!-- Main Action Buttons -->
+                        <div class="salary-main-actions">
+                            <h3>Quick Actions</h3>
+                            <div class="salary-action-buttons">
+                                <button class="btn btn-success salary-action-btn" onclick="schoolSystem.showPaySalaryForm()">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    <span>💰 Pay Salary</span>
+                                    <small>Process employee salary payments</small>
+                                </button>
 
-                    <div class="salary-btn-container">
-                        <button class="btn btn-primary salary-btn" onclick="schoolSystem.showSalarySheetForm()">
-                            <i class="fas fa-list-alt"></i>
-                            <span>📋 Salary Sheet</span>
-                        </button>
-                        <p>Display a comprehensive salary sheet with all records and totals</p>
-                    </div>
+                                <button class="btn btn-info salary-action-btn" onclick="schoolSystem.showSalarySlipForm()">
+                                    <i class="fas fa-receipt"></i>
+                                    <span>🧾 Salary Slip</span>
+                                    <small>Generate salary slips for employees</small>
+                                </button>
 
-                    <div class="salary-btn-container">
-                        <button class="btn btn-secondary salary-btn" onclick="schoolSystem.showSalaryReport()">
-                            <i class="fas fa-chart-bar"></i>
-                            <span>📊 Salary Report</span>
-                        </button>
-                        <p>Enhanced the existing report functionality</p>
+                                <button class="btn btn-primary salary-action-btn" onclick="schoolSystem.showSalarySheetForm()">
+                                    <i class="fas fa-list-alt"></i>
+                                    <span>📋 Salary Sheet</span>
+                                    <small>View comprehensive salary records</small>
+                                </button>
+
+                                <button class="btn btn-secondary salary-action-btn" onclick="schoolSystem.showSalaryReportForm()">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>📊 Salary Report</span>
+                                    <small>Generate detailed salary reports</small>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity Section -->
+                        <div class="salary-recent-activity">
+                            <h3>Recent Salary Records</h3>
+                            <div id="recentSalariesTable">
+                                <p>No salary records found. Add your first salary record!</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
                 <!-- Existing Salary Actions -->
                 <div class="salary-actions" style="margin-top: 20px;">

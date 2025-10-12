@@ -506,6 +506,243 @@ body {
     gap: 12px;
 }
 
+/* Enhanced Salary Management Dashboard */
+.salary-management-dashboard {
+    margin-bottom: 32px;
+}
+
+.salary-stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.salary-stat {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.salary-stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    pointer-events: none;
+}
+
+.salary-stat:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.salary-stat .stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+
+.salary-stat .stat-info {
+    flex: 1;
+}
+
+.salary-stat .stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.salary-stat .stat-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.salary-main-actions {
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.salary-main-actions h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #1e293b;
+    position: relative;
+}
+
+.salary-main-actions h3::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #0d6efd, #6610f2);
+    border-radius: 2px;
+}
+
+.salary-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.salary-action-btn {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 200px;
+    justify-content: center;
+}
+
+.salary-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s ease;
+}
+
+.salary-action-btn:hover::before {
+    left: 100%;
+}
+
+.salary-action-btn:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    border-color: #0d6efd;
+}
+
+.salary-action-btn i {
+    font-size: 3rem;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.salary-action-btn:hover i {
+    transform: scale(1.1);
+}
+
+.salary-action-btn span {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.salary-action-btn small {
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    font-weight: 400;
+}
+
+/* Enhanced button colors for salary management */
+.salary-action-btn:nth-child(1) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.salary-action-btn:nth-child(1):hover {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #10b981;
+}
+
+.salary-action-btn:nth-child(1):hover i,
+.salary-action-btn:nth-child(1):hover span {
+    color: white;
+}
+
+.salary-action-btn:nth-child(2) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.salary-action-btn:nth-child(2):hover {
+    background: linear-gradient(135deg, #0dcaf0, #0aa2c0);
+    border-color: #0dcaf0;
+}
+
+.salary-action-btn:nth-child(2):hover i,
+.salary-action-btn:nth-child(2):hover span {
+    color: white;
+}
+
+.salary-action-btn:nth-child(3) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.salary-action-btn:nth-child(3):hover {
+    background: linear-gradient(135deg, #0d6efd, #0056b3);
+    border-color: #0d6efd;
+}
+
+.salary-action-btn:nth-child(3):hover i,
+.salary-action-btn:nth-child(3):hover span {
+    color: white;
+}
+
+.salary-action-btn:nth-child(4) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.salary-action-btn:nth-child(4):hover {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    border-color: #6c757d;
+}
+
+.salary-action-btn:nth-child(4):hover i,
+.salary-action-btn:nth-child(4):hover span {
+    color: white;
+}
+
+.salary-recent-activity {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.salary-recent-activity h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #1e293b;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
 /* Added Salary Management Buttons */
 .salary-management-buttons {
     display: grid;
