@@ -268,6 +268,7 @@ class SchoolManagementSystem {
                         <td>
                             <button class="btn btn-sm btn-primary" onclick="schoolSystem.editStudent(${s.id})">Edit</button>
                             <button class="btn btn-sm btn-danger" onclick="schoolSystem.deleteStudent(${s.id})">Delete</button>
+                            <button class="btn btn-sm btn-success" onclick="schoolSystem.generateStudentID(${s.id})">Generate ID</button>
                         </td>
                     </tr>
                 `).join('');
@@ -470,6 +471,269 @@ class SchoolManagementSystem {
         this.students = this.students.filter(s => s.id !== id);
         localStorage.setItem('students', JSON.stringify(this.students));
         this.loadStudents();
+    }
+
+    generateStudentID(studentId) {
+        const student = this.students.find(s => s.id == studentId);
+        if (!student) {
+            alert('Student not found');
+            return;
+        }
+
+        // Check if school info is set up
+        const schoolInfo = this.schoolInfo;
+        if (!schoolInfo.name) {
+            alert('Please set up school information first (Settings > School Information)');
+            return;
+        }
+
+        // Create ID card window
+        const idWindow = window.open('', '_blank', 'width=900,height=600');
+        const currentDate = new Date().toLocaleDateString('en-IN');
+
+        // Generate a unique ID card number
+        const idCardNumber = 'SID' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+        idWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Student ID Card - ${student.name}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                        background: #f5f5f5;
+                    }
+                    .id-card {
+                        width: 350px;
+                        height: 220px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        margin: 50px auto;
+                        border-radius: 15px;
+                        padding: 20px;
+                        color: white;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    .id-card::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="90" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+                        opacity: 0.3;
+                    }
+                    .school-header {
+                        text-align: center;
+                        border-bottom: 2px solid rgba(255,255,255,0.3);
+                        padding-bottom: 10px;
+                        margin-bottom: 15px;
+                    }
+                    .school-name {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin: 0;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                    }
+                    .school-address {
+                        font-size: 10px;
+                        opacity: 0.9;
+                        margin: 5px 0;
+                    }
+                    .id-title {
+                        font-size: 14px;
+                        text-align: center;
+                        margin: 10px 0;
+                        font-weight: bold;
+                        letter-spacing: 2px;
+                    }
+                    .student-photo {
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 50%;
+                        object-fit: cover;
+                        border: 3px solid rgba(255,255,255,0.3);
+                        float: left;
+                        margin-right: 15px;
+                        background: rgba(255,255,255,0.2);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 10px;
+                        color: rgba(255,255,255,0.7);
+                    }
+                    .student-info {
+                        padding-top: 10px;
+                        overflow: hidden;
+                    }
+                    .info-row {
+                        margin-bottom: 8px;
+                        font-size: 11px;
+                        display: flex;
+                        justify-content: space-between;
+                    }
+                    .info-label {
+                        opacity: 0.9;
+                        font-weight: bold;
+                    }
+                    .info-value {
+                        font-weight: bold;
+                        text-align: right;
+                        max-width: 150px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                    .id-number {
+                        position: absolute;
+                        bottom: 15px;
+                        right: 20px;
+                        font-size: 10px;
+                        opacity: 0.8;
+                        font-family: monospace;
+                    }
+                    .valid-date {
+                        position: absolute;
+                        bottom: 5px;
+                        left: 20px;
+                        font-size: 8px;
+                        opacity: 0.7;
+                    }
+                    .blood-group {
+                        position: absolute;
+                        top: 15px;
+                        right: 20px;
+                        background: rgba(255,255,255,0.2);
+                        padding: 5px 8px;
+                        border-radius: 20px;
+                        font-size: 10px;
+                        font-weight: bold;
+                    }
+                    .clear {
+                        clear: both;
+                    }
+                    .download-btn {
+                        display: block;
+                        margin: 20px auto;
+                        padding: 12px 30px;
+                        background: linear-gradient(135deg, #28a745, #20c997);
+                        color: white;
+                        border: none;
+                        border-radius: 25px;
+                        font-size: 16px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+                        transition: all 0.3s ease;
+                    }
+                    .download-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+                    }
+                    @media print {
+                        body { background: white; margin: 0; padding: 0; }
+                        .id-card { margin: 0; box-shadow: none; }
+                        .download-btn { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="id-card">
+                    <div class="blood-group">${student.blood_group || 'N/A'}</div>
+                    <div class="school-header">
+                        <div class="school-name">${schoolInfo.name}</div>
+                        <div class="school-address">${schoolInfo.address || ''}</div>
+                    </div>
+                    <div class="id-title">STUDENT ID CARD</div>
+
+                    <div class="student-photo">
+                        ${student.photo ? `<img src="${student.photo}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : 'PHOTO'}
+                    </div>
+
+                    <div class="student-info">
+                        <div class="info-row">
+                            <span class="info-label">Name:</span>
+                            <span class="info-value">${student.name}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Roll No:</span>
+                            <span class="info-value">${student.roll_no || student.rollNo || 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Class:</span>
+                            <span class="info-value">${student.class} ${student.section || ''}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">DOB:</span>
+                            <span class="info-value">${student.dob ? new Date(student.dob).toLocaleDateString('en-IN') : 'N/A'}</span>
+                        </div>
+                    </div>
+
+                    <div class="clear"></div>
+                    <div class="id-number">ID: ${idCardNumber}</div>
+                    <div class="valid-date">Valid till: ${schoolInfo.academicYear || 'N/A'}</div>
+                </div>
+
+                <button class="download-btn" onclick="downloadAsPDF()">Download as PDF</button>
+
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+                <script>
+                    function downloadAsPDF() {
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF({
+                            orientation: 'landscape',
+                            unit: 'mm',
+                            format: 'a4'
+                        });
+
+                        // Add title
+                        doc.setFontSize(20);
+                        doc.setTextColor(40, 40, 40);
+                        doc.text('Student ID Card', 105, 20, { align: 'center' });
+
+                        // Add school info
+                        doc.setFontSize(14);
+                        doc.text('${schoolInfo.name}', 105, 35, { align: 'center' });
+                        doc.setFontSize(10);
+                        doc.text('${schoolInfo.address || ''}', 105, 45, { align: 'center' });
+
+                        // Add ID card content
+                        doc.setFontSize(12);
+
+                        // Student photo placeholder
+                        doc.rect(20, 60, 40, 30);
+                        doc.text('PHOTO', 40, 75, { align: 'center' });
+
+                        // Student details
+                        doc.text('Name: ${student.name}', 70, 70);
+                        doc.text('Roll No: ${student.roll_no || student.rollNo || 'N/A'}', 70, 80);
+                        doc.text('Class: ${student.class} ${student.section || ''}', 70, 90);
+                        doc.text('DOB: ${student.dob ? new Date(student.dob).toLocaleDateString('en-IN') : 'N/A'}', 70, 100);
+                        doc.text('Blood Group: ${student.blood_group || 'N/A'}', 70, 110);
+
+                        // ID number
+                        doc.setFontSize(10);
+                        doc.text('ID: ${idCardNumber}', 20, 130);
+                        doc.text('Valid till: ${schoolInfo.academicYear || 'N/A'}', 20, 140);
+                        doc.text('Generated: ${currentDate}', 20, 150);
+
+                        // Save the PDF
+                        doc.save('${student.name.replace(/[^a-zA-Z0-9]/g, '_')}_ID_Card.pdf');
+                    }
+
+                    // Auto-download after 2 seconds
+                    setTimeout(() => {
+                        document.querySelector('.download-btn').click();
+                    }, 2000);
+                <\/script>
+            </body>
+            </html>
+        `);
     }
 
     editTeacher(id) {
