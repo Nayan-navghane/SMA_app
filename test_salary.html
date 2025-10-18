@@ -878,14 +878,17 @@
                 return;
             }
 
-            let html = '<h4>Pending Salaries:</h4>';
+            let html = '<h4>Pending Salaries (Select to Pay):</h4>';
             html += '<div style="display: grid; gap: 10px; margin: 15px 0;">';
 
             employeeSalaries.forEach(salary => {
                 html += `
                     <div style="padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <strong>${salary.month} ${salary.year}</strong>
+                            <div style="display: flex; align-items: center;">
+                                <input type="checkbox" class="salary-checkbox" value="${salary.id}" style="margin-right: 10px;">
+                                <strong>${salary.month} ${salary.year}</strong>
+                            </div>
                             <span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; background: #fff3cd; color: #856404;">${salary.status}</span>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
@@ -904,7 +907,60 @@
             });
 
             html += '</div>';
+            html += '<div style="margin-top: 15px; text-align: center;">';
+            html += '<button type="button" class="btn btn-success" onclick="paySelectedSalaries()" style="margin-right: 10px;">💰 Pay Selected</button>';
+            html += '<button type="button" class="btn btn-primary" onclick="selectAllSalaries()">Select All</button>';
+            html += '</div>';
             pendingList.innerHTML = html;
+        }
+
+        function paySelectedSalaries() {
+            const selectedEmployeeId = document.getElementById('payEmployeeSelect').value;
+            const checkboxes = document.querySelectorAll('.salary-checkbox:checked');
+
+            if (!selectedEmployeeId) {
+                alert('Please select an employee');
+                return;
+            }
+
+            if (checkboxes.length === 0) {
+                alert('Please select at least one salary to pay');
+                return;
+            }
+
+            const selectedSalaryIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            const selectedSalaries = salaries.filter(s => selectedSalaryIds.includes(s.id));
+
+            // Mark selected salaries as paid
+            selectedSalaries.forEach(salary => {
+                salary.status = 'paid';
+                salary.paid_date = new Date().toISOString();
+            });
+
+            localStorage.setItem('salaries', JSON.stringify(salaries));
+
+            showMessage(`Successfully paid ${selectedSalaries.length} salary record(s)!`, 'success');
+            updateDashboard();
+            loadRecentSalaries();
+            showPendingSalaries();
+        }
+
+        function selectAllSalaries() {
+            const checkboxes = document.querySelectorAll('.salary-checkbox');
+            const selectAllBtn = document.querySelector('button[onclick="selectAllSalaries()"]');
+
+            // Check if all are already selected
+            const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+
+            // Toggle all checkboxes
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !allSelected;
+            });
+
+            // Update button text
+            if (selectAllBtn) {
+                selectAllBtn.textContent = allSelected ? 'Select All' : 'Deselect All';
+            }
         }
 
         function markSalaryAsPaid() {
