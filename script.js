@@ -12865,6 +12865,274 @@ End of Paper
         return isFormValid;
     }
 
+    // Enhanced Pay Salary Methods
+    showPaySalarySection() {
+        // Hide other sections first
+        document.querySelectorAll('.form-container').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        // Show the enhanced pay salary section
+        document.getElementById('paySalarySection').style.display = 'block';
+        this.loadEmployeesForPayment();
+        this.populatePaymentMethodDropdown();
+    }
+
+    hidePaySalarySection() {
+        document.getElementById('paySalarySection').style.display = 'none';
+        // Reset form
+        document.getElementById('payEmployee').value = '';
+        document.getElementById('paymentMethod').value = '';
+        document.getElementById('transactionId').value = '';
+        document.getElementById('pendingSalariesContainer').innerHTML = `
+            <h4>Select Salaries to Pay</h4>
+            <div class="salary-selection-info">
+                <p>Please select an employee above to view and select pending salaries for payment.</p>
+            </div>
+        `;
+    }
+
+    loadEmployeesForPayment() {
+        const employeeSelect = document.getElementById('payEmployee');
+        if (!employeeSelect) return;
+
+        // Clear existing options except the first one
+        while (employeeSelect.children.length > 1) {
+            employeeSelect.removeChild(employeeSelect.lastChild);
+        }
+
+        // Add all employees (teachers and staff) to the dropdown
+        [...this.teachers, ...this.staff].forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = `${employee.name} (${employee.department || employee.subject || 'Employee'})`;
+            employeeSelect.appendChild(option);
+        });
+    }
+
+    populatePaymentMethodDropdown() {
+        const paymentMethodSelect = document.getElementById('paymentMethod');
+        if (!paymentMethodSelect) return;
+
+        // Clear existing options except the first one
+        while (paymentMethodSelect.children.length > 1) {
+            paymentMethodSelect.removeChild(paymentMethodSelect.lastChild);
+        }
+
+        const paymentMethods = [
+            'Bank Transfer',
+            'Cash',
+            'Cheque',
+            'UPI',
+            'Online Transfer',
+            'Direct Deposit'
+        ];
+
+        paymentMethods.forEach(method => {
+            const option = document.createElement('option');
+            option.value = method;
+            option.textContent = method;
+            paymentMethodSelect.appendChild(option);
+        });
+    }
+
+    loadPendingSalaries() {
+        const employeeId = document.getElementById('payEmployee').value;
+        const container = document.getElementById('pendingSalariesContainer');
+
+        if (!employeeId) {
+            container.innerHTML = `
+                <h4>Select Salaries to Pay</h4>
+                <div class="salary-selection-info">
+                    <p>Please select an employee above to view and select pending salaries for payment.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const employee = [...this.teachers, ...this.staff].find(emp => emp.id == employeeId);
+        if (!employee) {
+            container.innerHTML = `
+                <h4>Select Salaries to Pay</h4>
+                <div class="salary-selection-info">
+                    <p>Employee not found. Please select a valid employee.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Get pending salaries for this employee
+        const pendingSalaries = this.salaries.filter(salary =>
+            salary.employee_id == employeeId &&
+            salary.status !== 'paid'
+        );
+
+        if (pendingSalaries.length === 0) {
+            container.innerHTML = `
+                <h4>Select Salaries to Pay</h4>
+                <div class="no-pending-salaries">
+                    <p>✅ No pending salaries for <strong>${employee.name}</strong></p>
+                    <p>All salaries for this employee have been paid.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <h4>Select Salaries to Pay</h4>
+            <div class="salary-selection-summary">
+                <p><strong>Employee:</strong> ${employee.name} (${employee.department || employee.subject || 'Employee'})</p>
+                <p><strong>Pending Salaries:</strong> ${pendingSalaries.length} record(s)</p>
+                <p><strong>Total Amount:</strong> ₹${pendingSalaries.reduce((sum, s) => sum + s.total_salary, 0).toFixed(2)}</p>
+            </div>
+            <div class="pending-salaries-grid">
+        `;
+
+        pendingSalaries.forEach(salary => {
+            html += `
+                <div class="salary-item-card">
+                    <div class="salary-item-header">
+                        <label class="salary-checkbox-label">
+                            <input type="checkbox" class="salary-checkbox" value="${salary.id}" onchange="schoolSystem.updateSelectedSalariesCount()">
+                            <span class="checkmark"></span>
+                        </label>
+                        <div class="salary-info">
+                            <strong>${salary.month} ${salary.year}</strong>
+                            <span class="status-badge status-${salary.status}">${salary.status}</span>
+                        </div>
+                    </div>
+                    <div class="salary-details">
+                        <div class="salary-breakdown">
+                            <div class="breakdown-item">
+                                <span class="label">Base Salary:</span>
+                                <span class="value">₹${salary.base_salary.toFixed(2)}</span>
+                            </div>
+                            ${salary.allowance ? `<div class="breakdown-item"><span class="label">Allowance:</span><span class="value">₹${salary.allowance.toFixed(2)}</span></div>` : ''}
+                            ${salary.overtime ? `<div class="breakdown-item"><span class="label">Overtime:</span><span class="value">₹${salary.overtime.toFixed(2)}</span></div>` : ''}
+                            ${salary.bonus ? `<div class="breakdown-item"><span class="label">Bonus:</span><span class="value">₹${salary.bonus.toFixed(2)}</span></div>` : ''}
+                            ${salary.deductions ? `<div class="breakdown-item"><span class="label">Deductions:</span><span class="value">-₹${salary.deductions.toFixed(2)}</span></div>` : ''}
+                            ${salary.tax_deduction ? `<div class="breakdown-item"><span class="label">Tax:</span><span class="value">-₹${salary.tax_deduction.toFixed(2)}</span></div>` : ''}
+                        </div>
+                        <div class="salary-total">
+                            <strong>Total: ₹${salary.total_salary.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    updateSelectedSalariesCount() {
+        const selectedCheckboxes = document.querySelectorAll('.salary-checkbox:checked');
+        const selectedCount = selectedCheckboxes.length;
+
+        // Update the pay button text to show count
+        const payButton = document.querySelector('.pay-salary-actions .btn-success');
+        if (payButton) {
+            if (selectedCount > 0) {
+                payButton.innerHTML = `<i class="fas fa-check-circle"></i> Pay Selected Salaries (${selectedCount})`;
+            } else {
+                payButton.innerHTML = `<i class="fas fa-check-circle"></i> Pay Selected Salaries`;
+            }
+        }
+    }
+
+    processSelectedSalaries() {
+        const employeeId = document.getElementById('payEmployee').value;
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        const transactionId = document.getElementById('transactionId').value;
+
+        if (!employeeId) {
+            alert('Please select an employee');
+            return;
+        }
+
+        if (!paymentMethod) {
+            alert('Please select a payment method');
+            return;
+        }
+
+        const selectedCheckboxes = document.querySelectorAll('.salary-checkbox:checked');
+
+        if (selectedCheckboxes.length === 0) {
+            alert('Please select at least one salary to pay');
+            return;
+        }
+
+        const selectedSalaryIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+        const selectedSalaries = this.salaries.filter(s => selectedSalaryIds.includes(s.id));
+
+        if (selectedSalaries.length === 0) {
+            alert('No valid salaries selected');
+            return;
+        }
+
+        // Confirm payment
+        const totalAmount = selectedSalaries.reduce((sum, s) => sum + s.total_salary, 0);
+        const confirmMessage = `Are you sure you want to process payment for ${selectedSalaries.length} salary record(s) amounting to ₹${totalAmount.toFixed(2)}?`;
+
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        // Process the payment
+        selectedSalaries.forEach(salary => {
+            salary.status = 'paid';
+            salary.payment_method = paymentMethod;
+            salary.transaction_id = transactionId;
+            salary.paid_date = new Date().toISOString();
+        });
+
+        localStorage.setItem('salaries', JSON.stringify(this.salaries));
+
+        // Show success message
+        alert(`Successfully processed payment for ${selectedSalaries.length} salary record(s)!\nTotal Amount: ₹${totalAmount.toFixed(2)}`);
+
+        // Update dashboard and reload data
+        this.loadSalaries();
+        this.hidePaySalarySection();
+
+        // Refresh the section to show updated data
+        setTimeout(() => {
+            this.showSection('salary');
+        }, 100);
+    }
+
+    selectAllPendingSalaries() {
+        const employeeId = document.getElementById('payEmployee').value;
+
+        if (!employeeId) {
+            alert('Please select an employee first');
+            return;
+        }
+
+        const allCheckboxes = document.querySelectorAll('.salary-checkbox');
+        const selectAllBtn = document.querySelector('button[onclick="schoolSystem.selectAllPendingSalaries()"]');
+
+        // Check if all are already selected
+        const allSelected = Array.from(allCheckboxes).every(cb => cb.checked);
+
+        // Toggle all checkboxes
+        allCheckboxes.forEach(checkbox => {
+            checkbox.checked = !allSelected;
+        });
+
+        // Update button text
+        if (selectAllBtn) {
+            if (allSelected) {
+                selectAllBtn.innerHTML = `<i class="fas fa-check-square"></i> Select All`;
+            } else {
+                selectAllBtn.innerHTML = `<i class="fas fa-square"></i> Deselect All`;
+            }
+        }
+
+        // Update count
+        this.updateSelectedSalariesCount();
+    }
+
     // Salary Slip Management Methods
     showSalarySlipForm() {
         document.getElementById('salarySlipFormContainer').style.display = 'block';

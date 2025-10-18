@@ -1704,6 +1704,52 @@
                             </div>
                         </div>
 
+                        <!-- Enhanced Pay Salary Section -->
+                        <div class="pay-salary-section" id="paySalarySection" style="display: none;">
+                            <h3>💰 Pay Employee Salaries</h3>
+                            <div class="pay-salary-controls">
+                                <div class="employee-selection">
+                                    <label for="payEmployee">Select Employee:</label>
+                                    <select id="payEmployee" onchange="schoolSystem.loadPendingSalaries()">
+                                        <option value="">Choose Employee</option>
+                                    </select>
+                                </div>
+                                <div class="payment-method-selection">
+                                    <label for="paymentMethod">Payment Method:</label>
+                                    <select id="paymentMethod">
+                                        <option value="">Select Payment Method</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Cheque">Cheque</option>
+                                        <option value="UPI">UPI</option>
+                                    </select>
+                                </div>
+                                <div class="transaction-id-input">
+                                    <label for="transactionId">Transaction ID/Reference:</label>
+                                    <input type="text" id="transactionId" placeholder="Transaction ID or Reference Number">
+                                </div>
+                            </div>
+
+                            <div class="pending-salaries-container" id="pendingSalariesContainer">
+                                <h4>Select Salaries to Pay</h4>
+                                <div class="salary-selection-info">
+                                    <p>Please select an employee above to view and select pending salaries for payment.</p>
+                                </div>
+                            </div>
+
+                            <div class="pay-salary-actions">
+                                <button class="btn btn-success" onclick="schoolSystem.processSelectedSalaries()">
+                                    <i class="fas fa-check-circle"></i> Pay Selected Salaries
+                                </button>
+                                <button class="btn btn-primary" onclick="schoolSystem.selectAllPendingSalaries()">
+                                    <i class="fas fa-check-square"></i> Select All
+                                </button>
+                                <button class="btn btn-secondary" onclick="schoolSystem.hidePaySalarySection()">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Recent Activity Section -->
                         <div class="salary-recent-activity">
                             <h3>Recent Salary Records</h3>
