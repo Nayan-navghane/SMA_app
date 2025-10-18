@@ -93,6 +93,9 @@
                 <h2>Students Management</h2>
                 <div class="action-buttons">
                     <button class="btn btn-primary" onclick="schoolSystem.showAddStudentForm()">Add Student</button>
+                    <button class="btn btn-success" onclick="schoolSystem.showStudentIDCreationForm()">
+                        <i class="fas fa-id-card"></i> Student ID Creation
+                    </button>
                 </div>
                 <div class="filters">
                     <input type="text" id="studentSearch" placeholder="Search by name or roll no...">
@@ -199,6 +202,158 @@
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Add Student</button>
                             <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddStudentForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Student ID Creation Form -->
+                <div class="form-container" id="studentIDFormContainer" style="display: none;">
+                    <form id="studentIDForm">
+                        <h3><i class="fas fa-id-card"></i> Student ID Card Creation</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_student_name">Student Name *</label>
+                                <input type="text" id="id_student_name" name="student_name" required placeholder="Enter full name">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_dob">Date of Birth *</label>
+                                <input type="date" id="id_dob" name="dob" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_father_name">Father's Name *</label>
+                                <input type="text" id="id_father_name" name="father_name" required placeholder="Enter father's full name">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_mobile">Mobile Number *</label>
+                                <input type="tel" id="id_mobile" name="mobile" required placeholder="10-digit mobile number" maxlength="10" pattern="[0-9]{10}">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_identification">Identification Number *</label>
+                                <input type="text" id="id_identification" name="identification" required placeholder="Aadhar, Enrollment, or other ID number">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_class">Class/Grade</label>
+                                <select id="id_class" name="class">
+                                    <option value="">Select Class</option>
+                                    <option value="Nursery">Nursery</option>
+                                    <option value="LKG">LKG</option>
+                                    <option value="UKG">UKG</option>
+                                    <option value="1">Class 1</option>
+                                    <option value="2">Class 2</option>
+                                    <option value="3">Class 3</option>
+                                    <option value="4">Class 4</option>
+                                    <option value="5">Class 5</option>
+                                    <option value="6">Class 6</option>
+                                    <option value="7">Class 7</option>
+                                    <option value="8">Class 8</option>
+                                    <option value="9">Class 9</option>
+                                    <option value="10">Class 10</option>
+                                    <option value="11">Class 11</option>
+                                    <option value="12">Class 12</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="id_section">Section</label>
+                                <input type="text" id="id_section" name="section" placeholder="e.g., A, B, C">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_roll_no">Roll Number</label>
+                                <input type="text" id="id_roll_no" name="roll_no" placeholder="Roll/Registration number">
+                            </div>
+                            <div class="form-group">
+                                <label for="id_blood_group">Blood Group</label>
+                                <select id="id_blood_group" name="blood_group">
+                                    <option value="">Select Blood Group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_address">Address</label>
+                                <textarea id="id_address" name="address" rows="2" placeholder="Student's address"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_valid_until">Valid Until</label>
+                                <input type="date" id="id_valid_until" name="valid_until" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_photo">Upload Photo *</label>
+                                <input type="file" id="id_photo" name="photo" accept="image/*" required>
+                                <div class="photo-preview" id="idPhotoPreview" style="margin-top: 10px;">
+                                    <img id="idPreviewImg" src="" alt="Photo Preview" style="max-width: 150px; max-height: 150px; display: none; border: 1px solid #ddd; padding: 5px; border-radius: 8px;">
+                                    <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Preview will appear here after selecting photo</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ID Card Preview -->
+                        <div class="id-card-preview" id="idCardPreview" style="display: none;">
+                            <h4><i class="fas fa-eye"></i> ID Card Preview</h4>
+                            <div class="id-card-container">
+                                <div class="id-card">
+                                    <div class="id-card-header">
+                                        <div class="school-info">
+                                            <h3 id="previewSchoolName">School Name</h3>
+                                            <p id="previewSchoolAddress">School Address</p>
+                                        </div>
+                                        <div class="id-card-title">STUDENT ID CARD</div>
+                                    </div>
+
+                                    <div class="id-card-body">
+                                        <div class="student-photo-section">
+                                            <img id="previewPhoto" src="" alt="Student Photo" class="student-id-photo">
+                                        </div>
+                                        <div class="student-details">
+                                            <div class="detail-row">
+                                                <span class="label">Name:</span>
+                                                <span id="previewName" class="value"></span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">Class:</span>
+                                                <span id="previewClass" class="value"></span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">Roll No:</span>
+                                                <span id="previewRollNo" class="value"></span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">DOB:</span>
+                                                <span id="previewDOB" class="value"></span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">Blood Group:</span>
+                                                <span id="previewBloodGroup" class="value"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="id-card-footer">
+                                        <div class="id-number">ID: <span id="previewIdNumber"></span></div>
+                                        <div class="valid-date">Valid till: <span id="previewValidDate"></span></div>
+                                        <div class="father-info">Father: <span id="previewFatherName"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-success" onclick="schoolSystem.generateStudentIDCard()">
+                                <i class="fas fa-magic"></i> Generate ID Card
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="schoolSystem.printStudentIDCard()" id="printIDBtn" style="display: none;">
+                                <i class="fas fa-print"></i> Print ID Card
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideStudentIDCreationForm()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
                         </div>
                     </form>
                 </div>

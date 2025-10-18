@@ -12865,6 +12865,518 @@ End of Paper
         return isFormValid;
     }
 
+    // Student ID Creation Methods
+    showStudentIDCreationForm() {
+        // Hide other forms first
+        document.querySelectorAll('.form-container').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        // Show the student ID creation form
+        document.getElementById('studentIDFormContainer').style.display = 'block';
+        this.setupStudentIDForm();
+        this.setDefaultIDDates();
+    }
+
+    hideStudentIDCreationForm() {
+        document.getElementById('studentIDFormContainer').style.display = 'none';
+        document.getElementById('idCardPreview').style.display = 'none';
+        document.getElementById('printIDBtn').style.display = 'none';
+        this.resetStudentIDForm();
+    }
+
+    setupStudentIDForm() {
+        const photoInput = document.getElementById('id_photo');
+        const previewImg = document.getElementById('idPreviewImg');
+
+        if (photoInput && previewImg) {
+            photoInput.addEventListener('change', (e) => {
+                this.previewStudentPhoto(e);
+            });
+        }
+
+        // Add real-time form validation
+        const requiredFields = ['id_student_name', 'id_dob', 'id_father_name', 'id_mobile', 'id_identification', 'id_valid_until'];
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateIDField(fieldId));
+                field.addEventListener('input', () => this.clearIDFieldError(fieldId));
+            }
+        });
+
+        // Add form submit handler
+        const idForm = document.getElementById('studentIDForm');
+        if (idForm) {
+            idForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.generateStudentIDCard();
+            });
+        }
+    }
+
+    setDefaultIDDates() {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const nextYear = currentYear + 1;
+
+        const validUntilInput = document.getElementById('id_valid_until');
+        if (validUntilInput) {
+            // Set default validity to 1 year from now
+            const defaultDate = new Date(nextYear, today.getMonth(), today.getDate());
+            validUntilInput.valueAsDate = defaultDate;
+        }
+    }
+
+    previewStudentPhoto(event) {
+        const file = event.target.files[0];
+        const previewImg = document.getElementById('idPreviewImg');
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+        }
+    }
+
+    validateIDField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        switch(fieldId) {
+            case 'id_student_name':
+                if (!field.value.trim()) {
+                    isValid = false;
+                    errorMessage = 'Please enter student name';
+                }
+                break;
+            case 'id_dob':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select date of birth';
+                } else {
+                    const dob = new Date(field.value);
+                    const today = new Date();
+                    if (dob >= today) {
+                        isValid = false;
+                        errorMessage = 'Date of birth must be in the past';
+                    }
+                }
+                break;
+            case 'id_father_name':
+                if (!field.value.trim()) {
+                    isValid = false;
+                    errorMessage = 'Please enter father\'s name';
+                }
+                break;
+            case 'id_mobile':
+                const mobileValue = field.value.trim();
+                if (!mobileValue) {
+                    isValid = false;
+                    errorMessage = 'Please enter mobile number';
+                } else if (!/^[0-9]{10}$/.test(mobileValue)) {
+                    isValid = false;
+                    errorMessage = 'Please enter a valid 10-digit mobile number';
+                }
+                break;
+            case 'id_identification':
+                if (!field.value.trim()) {
+                    isValid = false;
+                    errorMessage = 'Please enter identification number';
+                }
+                break;
+            case 'id_valid_until':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select validity date';
+                } else {
+                    const validUntil = new Date(field.value);
+                    const today = new Date();
+                    if (validUntil <= today) {
+                        isValid = false;
+                        errorMessage = 'Valid until date must be in the future';
+                    }
+                }
+                break;
+        }
+
+        this.displayIDFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    displayIDFieldError(fieldId, errorMessage) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        // Remove existing error
+        const existingError = field.parentNode.querySelector('.id-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        field.classList.remove('invalid-field');
+
+        if (errorMessage) {
+            field.classList.add('invalid-field');
+            const errorElement = document.createElement('div');
+            errorElement.className = 'id-error';
+            errorElement.style.color = '#dc3545';
+            errorElement.style.fontSize = '12px';
+            errorElement.style.marginTop = '5px';
+            errorElement.textContent = errorMessage;
+            field.parentNode.appendChild(errorElement);
+        }
+    }
+
+    clearIDFieldError(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        const errorElement = field.parentNode.querySelector('.id-error');
+        if (errorElement) {
+            errorElement.remove();
+        }
+        field.classList.remove('invalid-field');
+    }
+
+    validateStudentIDForm() {
+        const requiredFields = ['id_student_name', 'id_dob', 'id_father_name', 'id_mobile', 'id_identification', 'id_valid_until'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validateIDField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        // Check if photo is uploaded
+        const photoInput = document.getElementById('id_photo');
+        if (!photoInput.files || photoInput.files.length === 0) {
+            alert('Please upload a photo for the ID card');
+            isFormValid = false;
+        }
+
+        return isFormValid;
+    }
+
+    generateStudentIDCard() {
+        if (!this.validateStudentIDForm()) {
+            return;
+        }
+
+        const form = document.getElementById('studentIDForm');
+        const formData = new FormData(form);
+
+        // Get form values
+        const studentData = {
+            name: formData.get('student_name').trim(),
+            dob: formData.get('dob'),
+            fatherName: formData.get('father_name').trim(),
+            mobile: formData.get('mobile').trim(),
+            identification: formData.get('identification').trim(),
+            class: formData.get('class') || '',
+            section: formData.get('section') || '',
+            rollNo: formData.get('roll_no') || '',
+            bloodGroup: formData.get('blood_group') || '',
+            address: formData.get('address') || '',
+            validUntil: formData.get('valid_until'),
+            photo: document.getElementById('idPreviewImg').src
+        };
+
+        // Generate unique ID number
+        studentData.idNumber = 'SID' + Date.now() + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+        // Store the student ID data
+        this.studentIDData = studentData;
+
+        // Update preview
+        this.updateIDCardPreview(studentData);
+
+        // Show preview and print button
+        document.getElementById('idCardPreview').style.display = 'block';
+        document.getElementById('printIDBtn').style.display = 'inline-block';
+
+        // Show success message
+        alert('Student ID Card generated successfully! You can now preview and print it.');
+    }
+
+    updateIDCardPreview(studentData) {
+        // Update school information
+        document.getElementById('previewSchoolName').textContent = this.schoolInfo.name || 'School Name';
+        document.getElementById('previewSchoolAddress').textContent = this.schoolInfo.address || 'School Address';
+
+        // Update student information
+        document.getElementById('previewName').textContent = studentData.name;
+        document.getElementById('previewClass').textContent = studentData.class ? `${studentData.class} ${studentData.section}`.trim() : 'N/A';
+        document.getElementById('previewRollNo').textContent = studentData.rollNo || 'N/A';
+        document.getElementById('previewDOB').textContent = new Date(studentData.dob).toLocaleDateString('en-IN');
+        document.getElementById('previewBloodGroup').textContent = studentData.bloodGroup || 'N/A';
+        document.getElementById('previewIdNumber').textContent = studentData.idNumber;
+        document.getElementById('previewValidDate').textContent = new Date(studentData.validUntil).toLocaleDateString('en-IN');
+        document.getElementById('previewFatherName').textContent = studentData.fatherName;
+
+        // Update photo
+        document.getElementById('previewPhoto').src = studentData.photo;
+    }
+
+    printStudentIDCard() {
+        if (!this.studentIDData) {
+            alert('Please generate an ID card first');
+            return;
+        }
+
+        const studentData = this.studentIDData;
+        const printWindow = window.open('', '_blank', 'width=900,height=600');
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Student ID Card - ${studentData.name}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                        background: #f5f5f5;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 100vh;
+                    }
+                    .id-card {
+                        width: 400px;
+                        height: 250px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        border-radius: 20px;
+                        padding: 20px;
+                        color: white;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        position: relative;
+                        overflow: hidden;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .id-card::before {
+                        content: '';
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="20" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="20" cy="90" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+                        opacity: 0.3;
+                    }
+                    .id-card-header {
+                        text-align: center;
+                        border-bottom: 2px solid rgba(255,255,255,0.3);
+                        padding-bottom: 15px;
+                        margin-bottom: 15px;
+                    }
+                    .school-info h3 {
+                        font-size: 18px;
+                        font-weight: bold;
+                        margin: 0 0 5px 0;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                    }
+                    .school-info p {
+                        font-size: 12px;
+                        opacity: 0.9;
+                        margin: 0;
+                    }
+                    .id-card-title {
+                        font-size: 16px;
+                        text-align: center;
+                        margin: 10px 0;
+                        font-weight: bold;
+                        letter-spacing: 2px;
+                        text-transform: uppercase;
+                    }
+                    .id-card-body {
+                        display: flex;
+                        gap: 15px;
+                        flex: 1;
+                        align-items: center;
+                    }
+                    .student-photo-section {
+                        flex-shrink: 0;
+                    }
+                    .student-id-photo {
+                        width: 100px;
+                        height: 100px;
+                        border-radius: 50%;
+                        object-fit: cover;
+                        border: 3px solid rgba(255,255,255,0.3);
+                        background: rgba(255,255,255,0.2);
+                    }
+                    .student-details {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 8px;
+                    }
+                    .detail-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        font-size: 12px;
+                        padding: 4px 0;
+                        border-bottom: 1px solid rgba(255,255,255,0.2);
+                    }
+                    .detail-row:last-child {
+                        border-bottom: none;
+                    }
+                    .label {
+                        opacity: 0.9;
+                        font-weight: bold;
+                    }
+                    .value {
+                        font-weight: bold;
+                        text-align: right;
+                        max-width: 150px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                    .id-card-footer {
+                        margin-top: auto;
+                        padding-top: 15px;
+                        border-top: 1px solid rgba(255,255,255,0.3);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        font-size: 10px;
+                    }
+                    .id-number {
+                        font-family: monospace;
+                        font-weight: bold;
+                        opacity: 0.9;
+                    }
+                    .valid-date {
+                        opacity: 0.8;
+                    }
+                    .father-info {
+                        opacity: 0.8;
+                        max-width: 120px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+                    .print-button {
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 10px 20px;
+                        background: #28a745;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                    }
+                    .print-button:hover {
+                        background: #218838;
+                    }
+                    @media print {
+                        body { background: white; padding: 0; margin: 0; }
+                        .print-button { display: none; }
+                        .id-card {
+                            width: 100%;
+                            height: auto;
+                            page-break-inside: avoid;
+                            box-shadow: none;
+                            margin: 0;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <button class="print-button" onclick="window.print()">Print ID Card</button>
+
+                <div class="id-card">
+                    <div class="id-card-header">
+                        <div class="school-info">
+                            <h3>${this.schoolInfo.name || 'School Name'}</h3>
+                            <p>${this.schoolInfo.address || 'School Address'}</p>
+                        </div>
+                        <div class="id-card-title">STUDENT ID CARD</div>
+                    </div>
+
+                    <div class="id-card-body">
+                        <div class="student-photo-section">
+                            <img src="${studentData.photo}" alt="Student Photo" class="student-id-photo">
+                        </div>
+                        <div class="student-details">
+                            <div class="detail-row">
+                                <span class="label">Name:</span>
+                                <span class="value">${studentData.name}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Class:</span>
+                                <span class="value">${studentData.class ? studentData.class + ' ' + studentData.section : 'N/A'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Roll No:</span>
+                                <span class="value">${studentData.rollNo || 'N/A'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">DOB:</span>
+                                <span class="value">${new Date(studentData.dob).toLocaleDateString('en-IN')}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Blood Group:</span>
+                                <span class="value">${studentData.bloodGroup || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="id-card-footer">
+                        <div class="id-number">ID: ${studentData.idNumber}</div>
+                        <div class="valid-date">Valid till: ${new Date(studentData.validUntil).toLocaleDateString('en-IN')}</div>
+                        <div class="father-info">Father: ${studentData.fatherName}</div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+    }
+
+    resetStudentIDForm() {
+        const form = document.getElementById('studentIDForm');
+        if (form) {
+            form.reset();
+        }
+
+        // Reset photo preview
+        const previewImg = document.getElementById('idPreviewImg');
+        if (previewImg) {
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+        }
+
+        // Clear any errors
+        const errorElements = document.querySelectorAll('.id-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+
+        // Clear stored data
+        this.studentIDData = null;
+    }
+
     // Enhanced Pay Salary Methods
     showPaySalarySection() {
         // Hide other sections first
