@@ -175,6 +175,17 @@ class SchoolManagementSystem {
             salaryReportForm.addEventListener('submit', (e) => this.handleSalaryReportForm(e));
         }
 
+        // Teacher Salary form event listeners
+        const addTeacherSalaryForm = document.getElementById('addTeacherSalaryForm');
+        if (addTeacherSalaryForm) {
+            addTeacherSalaryForm.addEventListener('submit', (e) => this.handleAddTeacherSalaryForm(e));
+        }
+
+        const teacherSalarySlipForm = document.getElementById('teacherSalarySlipForm');
+        if (teacherSalarySlipForm) {
+            teacherSalarySlipForm.addEventListener('submit', (e) => this.handleTeacherSalarySlipForm(e));
+        }
+
         // Schedule form dropdown listeners
         const scheduleClassSelect = document.getElementById('scheduleClass');
         if (scheduleClassSelect) {
@@ -11712,7 +11723,707 @@ End of Paper
         document.body.classList = theme;
     }
 
-    // Enhanced Salary Management Methods
+    // Enhanced Teacher Salary Management Methods
+    showAddTeacherSalaryForm() {
+        document.getElementById('addTeacherSalaryFormContainer').style.display = 'block';
+        this.loadTeachersForSalary();
+        this.setDefaultTeacherSalaryDates();
+        this.setupTeacherSalaryFormValidation();
+        this.setupTeacherSalaryCalculation();
+    }
+
+    hideAddTeacherSalaryForm() {
+        document.getElementById('addTeacherSalaryFormContainer').style.display = 'none';
+        this.clearTeacherSalaryFormValidation();
+    }
+
+    showTeacherSalarySlipForm() {
+        document.getElementById('teacherSalarySlipFormContainer').style.display = 'block';
+        this.loadTeachersForSlip();
+        this.setupTeacherSlipFormValidation();
+    }
+
+    hideTeacherSalarySlipForm() {
+        document.getElementById('teacherSalarySlipFormContainer').style.display = 'none';
+        this.clearTeacherSlipFormValidation();
+    }
+
+    loadTeachersForSalary() {
+        const teacherSelect = document.getElementById('teacherSalaryEmployee');
+        if (!teacherSelect) return;
+
+        // Clear existing options except the first one
+        while (teacherSelect.children.length > 1) {
+            teacherSelect.removeChild(teacherSelect.lastChild);
+        }
+
+        // Add only teachers to the dropdown
+        this.teachers.forEach(teacher => {
+            const option = document.createElement('option');
+            option.value = teacher.id;
+            option.textContent = `${teacher.name} (${teacher.subject})`;
+            teacherSelect.appendChild(option);
+        });
+    }
+
+    loadTeachersForSlip() {
+        const teacherSelect = document.getElementById('slipTeacher');
+        if (!teacherSelect) return;
+
+        // Clear existing options except the first one
+        while (teacherSelect.children.length > 1) {
+            teacherSelect.removeChild(teacherSelect.lastChild);
+        }
+
+        // Add only teachers to the dropdown
+        this.teachers.forEach(teacher => {
+            const option = document.createElement('option');
+            option.value = teacher.id;
+            option.textContent = `${teacher.name} (${teacher.subject})`;
+            teacherSelect.appendChild(option);
+        });
+    }
+
+    loadTeacherSalaryInfo() {
+        const teacherId = document.getElementById('teacherSalaryEmployee').value;
+        if (!teacherId) return;
+
+        const teacher = this.teachers.find(t => t.id == teacherId);
+        if (!teacher) return;
+
+        // Auto-fill base salary if available
+        const baseSalaryInput = document.getElementById('teacherBaseSalary');
+        if (baseSalaryInput && teacher.salary) {
+            baseSalaryInput.value = teacher.salary;
+            this.calculateTeacherSalary();
+        }
+    }
+
+    loadTeacherPaidSalaries() {
+        const teacherId = document.getElementById('slipTeacher').value;
+        const recordSelect = document.getElementById('slipRecord');
+        if (!teacherId || !recordSelect) return;
+
+        // Clear existing options except the first one
+        while (recordSelect.children.length > 1) {
+            recordSelect.removeChild(recordSelect.lastChild);
+        }
+
+        // Load paid salary records for the selected teacher
+        const paidRecords = this.salaries.filter(salary =>
+            salary.employee_id == teacherId && salary.status === 'paid'
+        );
+
+        if (paidRecords.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No paid salary records found';
+            recordSelect.appendChild(option);
+            return;
+        }
+
+        paidRecords.forEach(record => {
+            const option = document.createElement('option');
+            option.value = record.id;
+            const monthYear = `${record.month} ${record.year}`;
+            const amount = parseFloat(record.total_salary || 0).toFixed(2);
+            option.textContent = `${monthYear} - ₹${amount}`;
+            recordSelect.appendChild(option);
+        });
+    }
+
+    setDefaultTeacherSalaryDates() {
+        const today = new Date();
+        const teacherMonthSelect = document.getElementById('teacherSalaryMonth');
+        const teacherYearSelect = document.getElementById('teacherSalaryYear');
+        const paymentDateInput = document.getElementById('teacherPaymentDate');
+
+        if (teacherMonthSelect) {
+            teacherMonthSelect.value = today.toLocaleDateString('en-US', { month: 'long' });
+        }
+        if (teacherYearSelect) {
+            teacherYearSelect.value = today.getFullYear().toString();
+        }
+        if (paymentDateInput) {
+            paymentDateInput.valueAsDate = today;
+        }
+    }
+
+    setupTeacherSalaryCalculation() {
+        // Add real-time calculation listeners
+        const salaryFields = ['teacherBaseSalary', 'teacherAllowance', 'teacherOvertime', 'teacherBonus', 'teacherDeductions', 'teacherTaxDeduction'];
+
+        salaryFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', () => this.calculateTeacherSalary());
+            }
+        });
+
+        // Add teacher selection listener
+        const teacherSelect = document.getElementById('teacherSalaryEmployee');
+        if (teacherSelect) {
+            teacherSelect.addEventListener('change', () => this.loadTeacherSalaryInfo());
+        }
+    }
+
+    calculateTeacherSalary() {
+        const baseSalary = parseFloat(document.getElementById('teacherBaseSalary').value) || 0;
+        const allowance = parseFloat(document.getElementById('teacherAllowance').value) || 0;
+        const overtime = parseFloat(document.getElementById('teacherOvertime').value) || 0;
+        const bonus = parseFloat(document.getElementById('teacherBonus').value) || 0;
+        const deductions = parseFloat(document.getElementById('teacherDeductions').value) || 0;
+        const taxDeduction = parseFloat(document.getElementById('teacherTaxDeduction').value) || 0;
+
+        const totalSalary = baseSalary + allowance + overtime + bonus - deductions - taxDeduction;
+
+        // Update calculation display
+        document.getElementById('calcBaseSalary').textContent = '₹' + baseSalary.toFixed(2);
+        document.getElementById('calcAllowance').textContent = '₹' + allowance.toFixed(2);
+        document.getElementById('calcOvertime').textContent = '₹' + overtime.toFixed(2);
+        document.getElementById('calcBonus').textContent = '₹' + bonus.toFixed(2);
+        document.getElementById('calcDeductions').textContent = '-₹' + deductions.toFixed(2);
+        document.getElementById('calcTax').textContent = '-₹' + taxDeduction.toFixed(2);
+        document.getElementById('calcTotalSalary').textContent = '₹' + totalSalary.toFixed(2);
+    }
+
+    setupTeacherSalaryFormValidation() {
+        const form = document.getElementById('addTeacherSalaryForm');
+        if (!form) return;
+
+        // Add real-time validation
+        const requiredFields = ['teacherSalaryEmployee', 'teacherSalaryMonth', 'teacherSalaryYear', 'teacherBaseSalary', 'teacherPaymentDate'];
+        const numericFields = ['teacherBaseSalary', 'teacherAllowance', 'teacherOvertime', 'teacherBonus', 'teacherDeductions', 'teacherTaxDeduction'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateTeacherSalaryField(fieldId));
+                field.addEventListener('input', () => this.clearTeacherFieldError(fieldId));
+            }
+        });
+
+        numericFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', () => {
+                    this.validateTeacherNumericField(fieldId);
+                    this.calculateTeacherSalary();
+                });
+            }
+        });
+
+        // Add form submit validation
+        form.addEventListener('submit', (e) => {
+            if (!this.validateTeacherSalaryForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    clearTeacherSalaryFormValidation() {
+        const errorElements = document.querySelectorAll('.teacher-salary-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+    }
+
+    validateTeacherSalaryField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        switch(fieldId) {
+            case 'teacherSalaryEmployee':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a teacher';
+                }
+                break;
+            case 'teacherSalaryMonth':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a month';
+                }
+                break;
+            case 'teacherSalaryYear':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a year';
+                }
+                break;
+            case 'teacherBaseSalary':
+                const baseSalary = parseFloat(field.value);
+                if (!field.value || isNaN(baseSalary) || baseSalary < 0) {
+                    isValid = false;
+                    errorMessage = 'Please enter a valid base salary (₹0 or more)';
+                }
+                break;
+            case 'teacherPaymentDate':
+                if (!field.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a payment date';
+                } else {
+                    const selectedDate = new Date(field.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (selectedDate < today) {
+                        isValid = false;
+                        errorMessage = 'Payment date cannot be in the past';
+                    }
+                }
+                break;
+        }
+
+        this.displayTeacherFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    validateTeacherNumericField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        const value = parseFloat(field.value);
+        let isValid = true;
+        let errorMessage = '';
+
+        if (field.value && (isNaN(value) || value < 0)) {
+            isValid = false;
+            errorMessage = 'Please enter a valid amount (₹0 or more)';
+        }
+
+        this.displayTeacherFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    displayTeacherFieldError(fieldId, errorMessage) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        // Remove existing error
+        const existingError = field.parentNode.querySelector('.teacher-salary-error');
+        if (existingError) {
+            existingError.remove();
+        }
+
+        field.classList.remove('invalid-field');
+
+        if (errorMessage) {
+            field.classList.add('invalid-field');
+            const errorElement = document.createElement('div');
+            errorElement.className = 'teacher-salary-error';
+            errorElement.style.color = '#dc3545';
+            errorElement.style.fontSize = '12px';
+            errorElement.style.marginTop = '5px';
+            errorElement.textContent = errorMessage;
+            field.parentNode.appendChild(errorElement);
+        }
+    }
+
+    clearTeacherFieldError(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        const errorElement = field.parentNode.querySelector('.teacher-salary-error');
+        if (errorElement) {
+            errorElement.remove();
+        }
+        field.classList.remove('invalid-field');
+    }
+
+    validateTeacherSalaryForm() {
+        const requiredFields = ['teacherSalaryEmployee', 'teacherSalaryMonth', 'teacherSalaryYear', 'teacherBaseSalary', 'teacherPaymentDate'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validateTeacherSalaryField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        // Validate numeric fields
+        const numericFields = ['teacherAllowance', 'teacherOvertime', 'teacherBonus', 'teacherDeductions', 'teacherTaxDeduction'];
+        numericFields.forEach(fieldId => {
+            if (!this.validateTeacherNumericField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
+    }
+
+    setupTeacherSlipFormValidation() {
+        const form = document.getElementById('teacherSalarySlipForm');
+        if (!form) return;
+
+        const requiredFields = ['slipTeacher', 'slipRecord'];
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateTeacherSlipField(fieldId));
+                field.addEventListener('change', () => this.clearTeacherFieldError(fieldId));
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            if (!this.validateTeacherSlipForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    clearTeacherSlipFormValidation() {
+        const errorElements = document.querySelectorAll('.teacher-slip-error');
+        errorElements.forEach(el => el.remove());
+        const invalidFields = document.querySelectorAll('.invalid-field');
+        invalidFields.forEach(el => el.classList.remove('invalid-field'));
+    }
+
+    validateTeacherSlipField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        let isValid = true;
+        let errorMessage = '';
+
+        if (!field.value) {
+            isValid = false;
+            errorMessage = `Please select ${fieldId === 'slipTeacher' ? 'a teacher' : 'a salary record'}`;
+        }
+
+        this.displayTeacherFieldError(fieldId, errorMessage);
+        return isValid;
+    }
+
+    validateTeacherSlipForm() {
+        const requiredFields = ['slipTeacher', 'slipRecord'];
+        let isFormValid = true;
+
+        requiredFields.forEach(fieldId => {
+            if (!this.validateTeacherSlipField(fieldId)) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
+    }
+
+    generateTeacherSalarySlip() {
+        const teacherId = document.getElementById('slipTeacher').value;
+        const recordId = document.getElementById('slipRecord').value;
+
+        if (!teacherId || !recordId) {
+            alert('Please select both teacher and salary record');
+            return;
+        }
+
+        const salaryRecord = this.salaries.find(s => s.id == recordId);
+        const teacher = this.teachers.find(t => t.id == teacherId);
+
+        if (!salaryRecord || !teacher) {
+            alert('Salary record or teacher not found');
+            return;
+        }
+
+        const previewDiv = document.getElementById('teacherSalarySlipPreview');
+        previewDiv.innerHTML = this.createTeacherSalarySlipHTML(teacher, salaryRecord);
+    }
+
+    createTeacherSalarySlipHTML(teacher, salaryRecord) {
+        const schoolInfo = this.getSchoolInfo();
+        const paymentDate = new Date(salaryRecord.payment_date || salaryRecord.date).toLocaleDateString('en-IN');
+
+        return `
+            <div class="salary-slip-container">
+                <div class="slip-header">
+                    <div class="company-info">
+                        <h2>${schoolInfo.name || 'School Name'}</h2>
+                        <p>${schoolInfo.address || 'School Address'}</p>
+                        <p>Phone: ${schoolInfo.phone || ''} | Email: ${schoolInfo.email || ''}</p>
+                    </div>
+                    <div class="slip-title">
+                        <h3>TEACHER SALARY SLIP</h3>
+                        <p>Month: ${salaryRecord.month} ${salaryRecord.year}</p>
+                    </div>
+                </div>
+
+                <div class="employee-info">
+                    <div class="info-row">
+                        <div class="info-item"><strong>Teacher Name:</strong> ${teacher.name}</div>
+                        <div class="info-item"><strong>Teacher ID:</strong> ${teacher.id}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-item"><strong>Subject:</strong> ${teacher.subject}</div>
+                        <div class="info-item"><strong>Joining Date:</strong> ${new Date(teacher.joining_date).toLocaleDateString('en-IN')}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-item"><strong>Payment Date:</strong> ${paymentDate}</div>
+                        <div class="info-item"><strong>Payment Method:</strong> ${salaryRecord.payment_method || 'N/A'}</div>
+                    </div>
+                </div>
+
+                <div class="salary-breakdown">
+                    <h4>Salary Breakdown</h4>
+                    <table class="slip-table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Base Salary</td>
+                                <td>${parseFloat(salaryRecord.base_salary || 0).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Teaching Allowance</td>
+                                <td>${parseFloat(salaryRecord.allowance || 0).toFixed(2)}</td>
+                            </tr>
+                            ${salaryRecord.overtime ? `<tr><td>Extra Classes Pay</td><td>${parseFloat(salaryRecord.overtime).toFixed(2)}</td></tr>` : ''}
+                            ${salaryRecord.bonus ? `<tr><td>Performance Bonus</td><td>${parseFloat(salaryRecord.bonus).toFixed(2)}</td></tr>` : ''}
+                            <tr class="total-row">
+                                <td><strong>Gross Salary</strong></td>
+                                <td><strong>${parseFloat(salaryRecord.gross_salary || salaryRecord.total_salary || 0).toFixed(2)}</strong></td>
+                            </tr>
+                            ${salaryRecord.deductions ? `<tr><td>Deductions</td><td>-${parseFloat(salaryRecord.deductions).toFixed(2)}</td></tr>` : ''}
+                            ${salaryRecord.tax_deduction ? `<tr><td>Tax Deduction</td><td>-${parseFloat(salaryRecord.tax_deduction).toFixed(2)}</td></tr>` : ''}
+                            <tr class="net-total-row">
+                                <td><strong>Net Salary</strong></td>
+                                <td><strong>${parseFloat(salaryRecord.total_salary || 0).toFixed(2)}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="slip-footer">
+                    <div class="signature-section">
+                        <div class="signature-box">
+                            <p>Teacher Signature</p>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="signature-box">
+                            <p>Principal/Director Signature</p>
+                            <div class="signature-line"></div>
+                        </div>
+                    </div>
+                    <div class="slip-note">
+                        <p><em>This is a computer-generated salary slip and does not require signature.</em></p>
+                        <p><em>Generated on: ${new Date().toLocaleDateString()}</em></p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    printTeacherSalarySlip() {
+        const previewDiv = document.getElementById('teacherSalarySlipPreview');
+        if (!previewDiv || !previewDiv.innerHTML.includes('salary-slip-container')) {
+            alert('Please generate a salary slip first');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        const schoolInfo = this.getSchoolInfo();
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Teacher Salary Slip - ${schoolInfo.name || 'School'}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .salary-slip-container { max-width: 800px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; }
+                    .slip-header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    .company-info h2 { margin: 0; color: #333; }
+                    .slip-title h3 { margin: 0; color: #666; text-align: right; }
+                    .employee-info { margin-bottom: 30px; }
+                    .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+                    .salary-breakdown h4 { margin-bottom: 15px; color: #333; }
+                    .slip-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                    .slip-table th, .slip-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    .slip-table th { background-color: #f5f5f5; font-weight: bold; }
+                    .total-row { background-color: #e8f4f8; }
+                    .net-total-row { background-color: #d4edda; font-weight: bold; }
+                    .signature-section { display: flex; justify-content: space-between; margin-top: 50px; }
+                    .signature-box { text-align: center; width: 45%; }
+                    .signature-line { border-bottom: 1px solid #000; margin-top: 40px; }
+                    .slip-note { text-align: center; margin-top: 20px; font-style: italic; color: #666; }
+                    @media print { body { margin: 0; } }
+                </style>
+            </head>
+            <body>
+                ${previewDiv.innerHTML}
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    handleAddTeacherSalaryForm(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        const teacherId = formData.get('teacher_salary_employee');
+        const teacher = this.teachers.find(t => t.id == teacherId);
+
+        if (!teacher) {
+            alert('Please select a valid teacher');
+            return;
+        }
+
+        const baseSalary = parseFloat(formData.get('teacher_base_salary')) || 0;
+        const allowance = parseFloat(formData.get('teacher_allowance')) || 0;
+        const overtime = parseFloat(formData.get('teacher_overtime')) || 0;
+        const bonus = parseFloat(formData.get('teacher_bonus')) || 0;
+        const deductions = parseFloat(formData.get('teacher_deductions')) || 0;
+        const taxDeduction = parseFloat(formData.get('teacher_tax_deduction')) || 0;
+
+        const totalSalary = baseSalary + allowance + overtime + bonus - deductions - taxDeduction;
+
+        const salaryRecord = {
+            id: Date.now(),
+            employee_id: teacherId,
+            employee_name: teacher.name,
+            employee_department: 'Teaching',
+            month: formData.get('teacher_salary_month'),
+            year: formData.get('teacher_salary_year'),
+            base_salary: baseSalary,
+            allowance: allowance,
+            overtime: overtime,
+            bonus: bonus,
+            deductions: deductions,
+            tax_deduction: taxDeduction,
+            total_salary: totalSalary,
+            payment_date: formData.get('teacher_payment_date'),
+            notes: formData.get('teacher_salary_notes'),
+            status: 'pending',
+            created_date: new Date().toISOString()
+        };
+
+        this.salaries.push(salaryRecord);
+        localStorage.setItem('salaries', JSON.stringify(this.salaries));
+        e.target.reset();
+        this.loadSalaries();
+        alert('Teacher salary record added successfully!');
+    }
+
+    showTeacherSalaryReport() {
+        if (this.salaries.length === 0) {
+            alert('No salary records found to generate report');
+            return;
+        }
+
+        const reportWindow = window.open('', '_blank', 'width=1000,height=800');
+        const schoolInfo = this.schoolInfo;
+
+        // Filter only teacher salaries
+        const teacherSalaries = this.salaries.filter(salary =>
+            salary.employee_department === 'Teaching' || this.teachers.some(t => t.id == salary.employee_id)
+        );
+
+        if (teacherSalaries.length === 0) {
+            alert('No teacher salary records found');
+            return;
+        }
+
+        reportWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Teacher Salary Report</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                    .school-logo { max-height: 80px; margin-bottom: 10px; }
+                    .summary { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+                    .salary-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                    .salary-table th, .salary-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+                    .salary-table th { background: #f8f9fa; font-weight: bold; }
+                    .employee-name { text-align: left; font-weight: bold; }
+                    .total-row { background: #e9ecef; font-weight: bold; }
+                    @media print { body { margin: 0; } .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <img src="${schoolInfo.logo || ''}" alt="School Logo" class="school-logo" style="${schoolInfo.logo ? '' : 'display: none;'}">
+                    <h1>${schoolInfo.name || 'School Management System'}</h1>
+                    <h2>Teacher Salary Report</h2>
+                    <p>Generated on: ${new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div class="summary">
+                    <strong>Summary:</strong> Total Teachers: ${teacherSalaries.length} |
+                    Total Amount: ₹${teacherSalaries.reduce((sum, s) => sum + s.total_salary, 0).toFixed(2)} |
+                    Pending: ${teacherSalaries.filter(s => s.status !== 'paid').length} |
+                    Paid: ${teacherSalaries.filter(s => s.status === 'paid').length}
+                </div>
+
+                <table class="salary-table">
+                    <thead>
+                        <tr>
+                            <th>Teacher Name</th>
+                            <th>Subject</th>
+                            <th>Month/Year</th>
+                            <th>Base Salary</th>
+                            <th>Allowance</th>
+                            <th>Extra Classes</th>
+                            <th>Bonus</th>
+                            <th>Deductions</th>
+                            <th>Tax</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${teacherSalaries.map(salary => {
+                            const teacher = this.teachers.find(t => t.id == salary.employee_id);
+                            return `
+                                <tr>
+                                    <td class="employee-name">${salary.employee_name}</td>
+                                    <td>${teacher ? teacher.subject : 'N/A'}</td>
+                                    <td>${salary.month} ${salary.year}</td>
+                                    <td>₹${salary.base_salary.toFixed(2)}</td>
+                                    <td>₹${(salary.allowance || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.overtime || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.bonus || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.deductions || 0).toFixed(2)}</td>
+                                    <td>₹${(salary.tax_deduction || 0).toFixed(2)}</td>
+                                    <td>₹${salary.total_salary.toFixed(2)}</td>
+                                    <td><span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8em; ${salary.status === 'paid' ? 'background: #d1fae5; color: #065f46;' : 'background: #fff3cd; color: #856404;'}">${salary.status}</span></td>
+                                </tr>
+                            `;
+                        }).join('')}
+                        <tr class="total-row">
+                            <td colspan="3"><strong>TOTAL</strong></td>
+                            <td><strong>₹${teacherSalaries.reduce((sum, s) => sum + s.base_salary, 0).toFixed(2)}</strong></td>
+                            <td><strong>₹${teacherSalaries.reduce((sum, s) => sum + (s.allowance || 0), 0).toFixed(2)}</strong></td>
+                            <td><strong>₹${teacherSalaries.reduce((sum, s) => sum + (s.overtime || 0), 0).toFixed(2)}</strong></td>
+                            <td><strong>₹${teacherSalaries.reduce((sum, s) => sum + (s.bonus || 0), 0).toFixed(2)}</strong></td>
+                            <td><strong>₹${teacherSalaries.reduce((sum, s) => sum + (s.deductions || 0), 0).toFixed(2)}</strong></td>
+                            <td><strong>₹${teacherSalaries.reduce((sum, s) => sum + (s.tax_deduction || 0), 0).toFixed(2)}</strong></td>
+                            <td><strong>₹${teacherSalaries.reduce((sum, s) => sum + s.total_salary, 0).toFixed(2)}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()">Print Teacher Salary Report</button>
+                    <button onclick="window.close()">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+    }
+
+    // Legacy Salary Management Methods (keeping for backward compatibility)
     showAddSalaryForm() {
         document.getElementById('addSalaryFormContainer').style.display = 'block';
         this.loadEmployeesForSalary();

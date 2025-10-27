@@ -1794,7 +1794,7 @@
 
                 <!-- Salary Section -->
                 <div id="salary" class="section">
-                    <h2>Salary Management</h2>
+                    <h2>💰 Teacher Salary Management</h2>
 
                     <!-- Enhanced Salary Management Interface -->
                     <div class="salary-management-dashboard">
@@ -1802,11 +1802,11 @@
                         <div class="salary-stats-overview">
                             <div class="stat-card salary-stat">
                                 <div class="stat-icon">
-                                    <i class="fas fa-users"></i>
+                                    <i class="fas fa-chalkboard-teacher"></i>
                                 </div>
                                 <div class="stat-info">
-                                    <div class="stat-number" id="totalEmployeesCount">0</div>
-                                    <div class="stat-label">Total Employees</div>
+                                    <div class="stat-number" id="totalTeachersCount">0</div>
+                                    <div class="stat-label">Total Teachers</div>
                                 </div>
                             </div>
                             <div class="stat-card salary-stat">
@@ -1829,44 +1829,44 @@
                             </div>
                         </div>
 
-                        <!-- Main Action Buttons -->
+                        <!-- Teacher-Specific Quick Actions -->
                         <div class="salary-main-actions">
-                            <h3>Quick Actions</h3>
+                            <h3>Teacher Salary Management</h3>
                             <div class="salary-action-buttons">
-                                <button class="btn btn-success salary-action-btn" onclick="schoolSystem.showPaySalaryForm()">
+                                <button class="btn btn-success salary-action-btn" onclick="schoolSystem.showAddTeacherSalaryForm()">
+                                    <i class="fas fa-plus-circle"></i>
+                                    <span>➕ Add Teacher Salary</span>
+                                    <small>Add salary record for teachers</small>
+                                </button>
+
+                                <button class="btn btn-info salary-action-btn" onclick="schoolSystem.showPaySalarySection()">
                                     <i class="fas fa-money-bill-wave"></i>
-                                    <span>💰 Pay Salary</span>
-                                    <small>Process employee salary payments</small>
+                                    <span>💰 Pay Teacher Salaries</span>
+                                    <small>Process teacher salary payments</small>
                                 </button>
 
-                                <button class="btn btn-info salary-action-btn" onclick="schoolSystem.showSalarySlipForm()">
+                                <button class="btn btn-primary salary-action-btn" onclick="schoolSystem.showTeacherSalarySlipForm()">
                                     <i class="fas fa-receipt"></i>
-                                    <span>🧾 Salary Slip</span>
-                                    <small>Generate salary slips for employees</small>
+                                    <span>🧾 Teacher Salary Slips</span>
+                                    <small>Generate salary slips for teachers</small>
                                 </button>
 
-                                <button class="btn btn-primary salary-action-btn" onclick="schoolSystem.showSalarySheetForm()">
-                                    <i class="fas fa-list-alt"></i>
-                                    <span>📋 Salary Sheet</span>
-                                    <small>View comprehensive salary records</small>
-                                </button>
-
-                                <button class="btn btn-secondary salary-action-btn" onclick="schoolSystem.showSalaryReportForm()">
+                                <button class="btn btn-secondary salary-action-btn" onclick="schoolSystem.showTeacherSalaryReport()">
                                     <i class="fas fa-chart-bar"></i>
-                                    <span>📊 Salary Report</span>
-                                    <small>Generate detailed salary reports</small>
+                                    <span>📊 Teacher Salary Report</span>
+                                    <small>View teacher salary analytics</small>
                                 </button>
                             </div>
                         </div>
 
                         <!-- Enhanced Pay Salary Section -->
                         <div class="pay-salary-section" id="paySalarySection" style="display: none;">
-                            <h3>💰 Pay Employee Salaries</h3>
+                            <h3>💰 Pay Teacher Salaries</h3>
                             <div class="pay-salary-controls">
                                 <div class="employee-selection">
-                                    <label for="payEmployee">Select Employee:</label>
+                                    <label for="payEmployee">Select Teacher:</label>
                                     <select id="payEmployee" onchange="schoolSystem.loadPendingSalaries()">
-                                        <option value="">Choose Employee</option>
+                                        <option value="">Choose Teacher</option>
                                     </select>
                                 </div>
                                 <div class="payment-method-selection">
@@ -1888,7 +1888,7 @@
                             <div class="pending-salaries-container" id="pendingSalariesContainer">
                                 <h4>Select Salaries to Pay</h4>
                                 <div class="salary-selection-info">
-                                    <p>Please select an employee above to view and select pending salaries for payment.</p>
+                                    <p>Please select a teacher above to view and select pending salaries for payment.</p>
                                 </div>
                             </div>
 
@@ -1905,21 +1905,186 @@
                             </div>
                         </div>
 
-                        <!-- Recent Activity Section -->
+                        <!-- Teacher Salary Form -->
+                        <div class="form-container" id="addTeacherSalaryFormContainer" style="display: none;">
+                            <form id="addTeacherSalaryForm">
+                                <h3>📚 Add Teacher Salary Record</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="teacherSalaryEmployee">Select Teacher *</label>
+                                        <select id="teacherSalaryEmployee" name="teacher_salary_employee" required onchange="schoolSystem.loadTeacherSalaryInfo()">
+                                            <option value="">Choose Teacher</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="teacherSalaryMonth">Month *</label>
+                                        <select id="teacherSalaryMonth" name="teacher_salary_month" required>
+                                            <option value="">Select Month</option>
+                                            <option value="January">January</option>
+                                            <option value="February">February</option>
+                                            <option value="March">March</option>
+                                            <option value="April">April</option>
+                                            <option value="May">May</option>
+                                            <option value="June">June</option>
+                                            <option value="July">July</option>
+                                            <option value="August">August</option>
+                                            <option value="September">September</option>
+                                            <option value="October">October</option>
+                                            <option value="November">November</option>
+                                            <option value="December">December</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="teacherSalaryYear">Year *</label>
+                                        <select id="teacherSalaryYear" name="teacher_salary_year" required>
+                                            <option value="">Select Year</option>
+                                            <option value="2024">2024</option>
+                                            <option value="2025">2025</option>
+                                            <option value="2026">2026</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="salary-components-section">
+                                    <h4>Salary Components</h4>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="teacherBaseSalary">Base Salary (₹) *</label>
+                                            <input type="number" id="teacherBaseSalary" name="teacher_base_salary" min="0" step="0.01" required placeholder="Enter base salary">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="teacherAllowance">Teaching Allowance (₹)</label>
+                                            <input type="number" id="teacherAllowance" name="teacher_allowance" min="0" step="0.01" value="0" placeholder="Additional allowance">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="teacherOvertime">Extra Classes Pay (₹)</label>
+                                            <input type="number" id="teacherOvertime" name="teacher_overtime" min="0" step="0.01" value="0" placeholder="Extra classes payment">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="teacherBonus">Performance Bonus (₹)</label>
+                                            <input type="number" id="teacherBonus" name="teacher_bonus" min="0" step="0.01" value="0" placeholder="Performance bonus">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="teacherDeductions">Deductions (₹)</label>
+                                            <input type="number" id="teacherDeductions" name="teacher_deductions" min="0" step="0.01" value="0" placeholder="Any deductions">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="teacherTaxDeduction">Tax Deduction (₹)</label>
+                                            <input type="number" id="teacherTaxDeduction" name="teacher_tax_deduction" min="0" step="0.01" value="0" placeholder="Tax amount">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Real-time Salary Calculation -->
+                                <div class="salary-calculation-preview">
+                                    <div class="calculation-display">
+                                        <h4>Salary Calculation</h4>
+                                        <div class="calculation-breakdown">
+                                            <div class="calc-item">
+                                                <span>Base Salary:</span>
+                                                <span id="calcBaseSalary">₹0.00</span>
+                                            </div>
+                                            <div class="calc-item">
+                                                <span>Teaching Allowance:</span>
+                                                <span id="calcAllowance">₹0.00</span>
+                                            </div>
+                                            <div class="calc-item">
+                                                <span>Extra Classes:</span>
+                                                <span id="calcOvertime">₹0.00</span>
+                                            </div>
+                                            <div class="calc-item">
+                                                <span>Performance Bonus:</span>
+                                                <span id="calcBonus">₹0.00</span>
+                                            </div>
+                                            <div class="calc-item negative">
+                                                <span>Deductions:</span>
+                                                <span id="calcDeductions">-₹0.00</span>
+                                            </div>
+                                            <div class="calc-item negative">
+                                                <span>Tax:</span>
+                                                <span id="calcTax">-₹0.00</span>
+                                            </div>
+                                            <div class="calc-item total">
+                                                <span><strong>Total Salary:</strong></span>
+                                                <span id="calcTotalSalary"><strong>₹0.00</strong></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="teacherPaymentDate">Payment Date *</label>
+                                        <input type="date" id="teacherPaymentDate" name="teacher_payment_date" required>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label for="teacherSalaryNotes">Notes/Remarks</label>
+                                        <textarea id="teacherSalaryNotes" name="teacher_salary_notes" rows="3" placeholder="Any additional notes about this salary payment..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Add Teacher Salary Record
+                                    </button>
+                                    <button type="button" class="btn btn-success" onclick="schoolSystem.calculateTeacherSalary()">
+                                        <i class="fas fa-calculator"></i> Calculate Salary
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideAddTeacherSalaryForm()">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Teacher Salary Slip Form -->
+                        <div class="form-container" id="teacherSalarySlipFormContainer" style="display: none;">
+                            <form id="teacherSalarySlipForm">
+                                <h3>🧾 Generate Teacher Salary Slip</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="slipTeacher">Select Teacher *</label>
+                                        <select id="slipTeacher" name="slip_teacher" required onchange="schoolSystem.loadTeacherPaidSalaries()">
+                                            <option value="">Choose Teacher</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="slipRecord">Salary Record *</label>
+                                        <select id="slipRecord" name="slip_record" required>
+                                            <option value="">Select Paid Salary Record</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="salary-slip-preview" id="teacherSalarySlipPreview">
+                                    <h4>Salary Slip Preview</h4>
+                                    <p>Select a teacher and salary record to generate slip preview</p>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-primary" onclick="schoolSystem.generateTeacherSalarySlip()">
+                                        <i class="fas fa-magic"></i> Generate Salary Slip
+                                    </button>
+                                    <button type="button" class="btn btn-success" onclick="schoolSystem.printTeacherSalarySlip()">
+                                        <i class="fas fa-print"></i> Print Salary Slip
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="schoolSystem.hideTeacherSalarySlipForm()">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Recent Teacher Salary Records -->
                         <div class="salary-recent-activity">
-                            <h3>Recent Salary Records</h3>
-                            <div id="recentSalariesTable">
-                                <p>No salary records found. Add your first salary record!</p>
+                            <h3>Recent Teacher Salary Records</h3>
+                            <div id="recentTeacherSalariesTable">
+                                <p>No teacher salary records found. Add your first teacher salary record!</p>
                             </div>
                         </div>
                     </div>
-
-                <!-- Existing Salary Actions -->
-                <div class="salary-actions" style="margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="schoolSystem.showAddSalaryForm()">Add Salary</button>
-                    <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display: none;">
-                    <button class="btn btn-warning" onclick="document.getElementById('excelUpload').click()">Upload Excel</button>
-                </div>
 
                 <!-- Add Salary Form -->
                 <div class="form-container" id="addSalaryFormContainer" style="display: none;">

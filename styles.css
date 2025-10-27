@@ -3021,3 +3021,285 @@ body {
         margin: 0;
     }
 }
+
+/* Enhanced Teacher Salary Management Styles */
+.salary-calculation-preview {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 24px 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.calculation-display h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.calculation-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.calc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.calc-item span:first-child {
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.calc-item span:last-child {
+    font-weight: 600;
+}
+
+.calc-item.negative span:last-child {
+    color: #fecaca;
+}
+
+.calc-item.total {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    margin-top: 8px;
+}
+
+.calc-item.total span {
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.salary-components-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.salary-components-section h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #1e293b;
+    border-bottom: 2px solid #10b981;
+    padding-bottom: 8px;
+}
+
+.salary-components-section .form-row {
+    margin-bottom: 20px;
+}
+
+.salary-components-section .form-group label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.salary-components-section .form-group input {
+    padding: 12px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.salary-components-section .form-group input:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    transform: scale(1.02);
+}
+
+.salary-components-section .form-group input:hover {
+    border-color: #10b981;
+}
+
+/* Enhanced Teacher Salary Slip Form Styles */
+#teacherSalarySlipFormContainer {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 32px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+#teacherSalarySlipFormContainer:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+#teacherSalarySlipFormContainer h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #1e293b;
+    border-bottom: 3px solid #0dcaf0;
+    padding-bottom: 12px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#teacherSalarySlipFormContainer h3::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #0dcaf0, #0aa2c0);
+    border-radius: 2px;
+}
+
+#teacherSalarySlipFormContainer h3 i {
+    color: #0dcaf0;
+    font-size: 1.75rem;
+}
+
+.salary-slip-preview {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.salary-slip-preview h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #0c4a6e;
+    border-bottom: 2px solid #0dcaf0;
+    padding-bottom: 8px;
+}
+
+.salary-slip-preview p {
+    color: #64748b;
+    font-style: italic;
+    text-align: center;
+    margin: 0;
+}
+
+/* Enhanced Teacher Salary Report Styles */
+.teacher-salary-report {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 32px;
+}
+
+.teacher-salary-report h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #1e293b;
+    border-bottom: 3px solid #6c757d;
+    padding-bottom: 12px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.teacher-salary-report h3::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #6c757d, #495057);
+    border-radius: 2px;
+}
+
+.teacher-salary-report h3 i {
+    color: #6c757d;
+    font-size: 1.75rem;
+}
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 768px) {
+    .salary-calculation-preview {
+        padding: 20px;
+    }
+
+    .calculation-breakdown {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .calc-item {
+        padding: 10px 12px;
+    }
+
+    .salary-components-section {
+        padding: 20px;
+    }
+
+    #teacherSalarySlipFormContainer {
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    #teacherSalarySlipFormContainer h3 {
+        font-size: 1.25rem;
+    }
+
+    .teacher-salary-report {
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .teacher-salary-report h3 {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .salary-calculation-preview {
+        padding: 16px;
+    }
+
+    .salary-components-section {
+        padding: 16px;
+    }
+
+    #teacherSalarySlipFormContainer {
+        padding: 16px;
+        border-radius: 8px;
+    }
+
+    #teacherSalarySlipFormContainer h3 {
+        font-size: 1.125rem;
+    }
+
+    .teacher-salary-report {
+        padding: 16px;
+        border-radius: 8px;
+    }
+
+    .teacher-salary-report h3 {
+        font-size: 1.125rem;
+    }
+}
